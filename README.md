@@ -67,3 +67,10 @@ nvsonar
 ## License
 
 Apache License 2.0 - see [LICENSE](LICENSE) for details.
+
+
+## Author
+
+Maintained by [**Bekmukhamed Tursunbayev**](https://btursunbayev.github.io)  
+GitHub: https://github.com/btursunbayev · PyPI: https://pypi.org/user/btursunbayev/
+
