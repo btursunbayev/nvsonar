@@ -3,6 +3,8 @@
 [![PyPI version](https://img.shields.io/pypi/v/nvsonar.svg)](https://pypi.org/project/nvsonar/)
 [![Python](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![License](https://img.shields.io/badge/license-Apache%202.0-green.svg)](LICENSE)
+[![Downloads](https://pepy.tech/badge/nvsonar)](https://pepy.tech/project/nvsonar)
+
 
 Active GPU diagnostic tool that identifies performance bottlenecks using targeted micro-probes.
 
