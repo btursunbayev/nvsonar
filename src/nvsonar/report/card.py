@@ -127,6 +127,8 @@ def print_report(
     table.add_column(style="dim", width=20)
     table.add_column()
 
+    table.add_row("Driver", gpu_info.driver_version)
+    table.add_row("CUDA", gpu_info.cuda_version)
     table.add_row("GPU utilization", f"{metrics.gpu_utilization}%")
     table.add_row("Memory controller", f"{metrics.memory_utilization}%")
     table.add_row(
