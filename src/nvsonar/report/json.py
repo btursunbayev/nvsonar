@@ -31,6 +31,8 @@ def build_report(
             "memory_utilization": metrics.memory_utilization,
             "memory_used_mb": metrics.memory_used // (1024 ** 2),
             "memory_total_mb": metrics.memory_total // (1024 ** 2),
+            "memory_used_gb": round(metrics.memory_used / (1024 ** 3), 1),
+            "memory_total_gb": round(metrics.memory_total / (1024 ** 3), 1),
             "memory_used_pct": round(metrics.memory_used_pct, 1),
             "gpu_clock_mhz": metrics.gpu_clock,
             "max_gpu_clock_mhz": metrics.max_gpu_clock,
