@@ -20,6 +20,12 @@ def main(
     if ctx.invoked_subcommand is not None:
         return
 
+    from nvsonar.monitor import initialize
+    if not initialize():
+        typer.echo("Error: failed to initialize NVML", err=True)
+        typer.echo("Make sure you have an NVIDIA GPU with drivers installed", err=True)
+        sys.exit(1)
+
     try:
         from nvsonar.tui.app import App
 
@@ -41,6 +47,10 @@ def report(
     gpu: int = typer.Option(-1, "--gpu", help="GPU index, -1 for all"),
 ):
     """One-shot GPU diagnostic report"""
+    if json and csv:
+        typer.echo("Error: --json and --csv are mutually exclusive", err=True)
+        sys.exit(1)
+
     from nvsonar.monitor import initialize, get_device_count, get_gpu_info, MetricsCollector
     from nvsonar.analysis import classify, detect_outliers, recommend
     from nvsonar.report import print_report, to_json, report_to_csv_row, to_csv
@@ -131,6 +141,7 @@ def benchmark(
     pcie: bool = typer.Option(False, "--pcie", help="Run PCIe bandwidth only"),
 ):
     """Run GPU performance benchmarks"""
+    import shutil
     from rich.console import Console
     from rich.panel import Panel
     from rich.table import Table
@@ -142,6 +153,11 @@ def benchmark(
 
     if not initialize():
         console.print("[red]Error: failed to initialize NVML, no NVIDIA GPU found[/red]")
+        sys.exit(1)
+
+    if not shutil.which("nvcc"):
+        console.print("[red]Error: CUDA toolkit not found (nvcc not in PATH)[/red]")
+        console.print("Install CUDA toolkit: https://developer.nvidia.com/cuda-downloads")
         sys.exit(1)
 
     info = get_gpu_info(0)

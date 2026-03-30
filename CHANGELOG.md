@@ -1,5 +1,14 @@
 # Changelog
 
+## [2.1.2] - 2026-03-30
+
+### Fixed
+- CUDA kernel files (.cu) now included in pip package
+- TUI fails fast with clear message when no GPU/driver found
+- `--json` and `--csv` flags are now mutually exclusive
+- `nvsonar benchmark` checks for nvcc once upfront with install link
+- Missing kernel files show helpful reinstall message
+
 ## [2.1.1] - 2026-03-30
 
 ### Fixed
