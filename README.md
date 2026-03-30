@@ -11,17 +11,13 @@ GPU monitoring tools show utilization percentages, but this can be misleading. A
 
 ## Features
 
-- Bottleneck classification (compute-bound, memory-bandwidth-bound, memory-capacity-bound, power-limited, thermal-throttled, data-starved)
-- Temporal pattern detection (clock oscillation, temperature trends, utilization dips, memory leaks)
-- Multi-GPU outlier detection via Z-scores
-- Health scoring with A-F grades (0-100 per GPU)
-- Throttle bitmask decoder with severity levels
-- PCIe link degradation and ECC error monitoring
-- Actionable recommendations with specific commands
-- GPU performance benchmarks (memory bandwidth, compute throughput, PCIe speed)
-- Historical tracking with trend analysis over time
-- Session monitoring Python API for workload profiling
-- JSON and CSV output for automation and scripting
+- **Diagnostics:** bottleneck classification (compute, memory, power, thermal, data-starved), temporal pattern detection (clock oscillation, temperature trends, utilization dips, memory leaks)
+- **Multi-GPU:** outlier detection via Z-scores, flags the GPU slowing down distributed training
+- **Health scoring:** 0-100 per GPU with A-F grades, actionable recommendations with specific commands
+- **Benchmarks:** memory bandwidth, compute throughput, PCIe speed vs theoretical specs
+- **History:** tracks GPU health over time, detects degradation trends
+- **Python API:** session monitoring during training (`nvsonar.start()`, `nvsonar.stop()`)
+- **Output:** terminal report, JSON, CSV
 
 ## Requirements
 
@@ -45,6 +41,12 @@ nvsonar report --gpu 0   # specific GPU
 nvsonar benchmark        # GPU performance benchmarks
 nvsonar history          # health trends over time
 ```
+
+## Documentation
+
+- [Architecture](docs/ARCHITECTURE.md)
+- [Contributing](CONTRIBUTING.md)
+- [Changelog](CHANGELOG.md)
 
 ## License
 
