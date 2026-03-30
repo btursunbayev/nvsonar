@@ -62,6 +62,12 @@ def _compile(kernel_name: str) -> Path:
     cu_path = KERNELS_DIR / f"{kernel_name}.cu"
     so_path = CACHE_DIR / f"{kernel_name}.so"
 
+    if not cu_path.exists():
+        raise RuntimeError(
+            f"Kernel source {kernel_name}.cu not found. "
+            f"Reinstall nvsonar: pip install --force-reinstall nvsonar"
+        )
+
     # recompile if source is newer than cached .so
     if so_path.exists():
         if cu_path.stat().st_mtime <= so_path.stat().st_mtime:

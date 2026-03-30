@@ -28,6 +28,7 @@ GPU monitoring tools show utilization percentages, but this can be misleading. A
 - Python 3.10+
 - NVIDIA GPU with driver installed
 - Linux
+- CUDA toolkit (only for `nvsonar benchmark`, not required for other commands)
 
 ## Installation and Usage
 
