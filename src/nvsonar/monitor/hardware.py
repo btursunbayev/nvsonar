@@ -144,20 +144,30 @@ def get_gpu_info(device_index: int = 0) -> GPUInfo | None:
 
         name = _decode(nvml.nvmlDeviceGetName(handle))
         uuid = _decode(nvml.nvmlDeviceGetUUID(handle))
-        memory = nvml.nvmlDeviceGetMemoryInfo(handle)
+        try:
+            memory = nvml.nvmlDeviceGetMemoryInfo(handle)
+            memory_total = memory.total
+        except nvml.NVMLError:
+            memory_total = 0
         driver = _decode(nvml.nvmlSystemGetDriverVersion())
 
-        cuda_ver = nvml.nvmlSystemGetCudaDriverVersion()
-        cuda_str = f"{cuda_ver // 1000}.{(cuda_ver % 1000) // 10}"
+        try:
+            cuda_ver = nvml.nvmlSystemGetCudaDriverVersion()
+            cuda_str = f"{cuda_ver // 1000}.{(cuda_ver % 1000) // 10}" if cuda_ver else "unknown"
+        except nvml.NVMLError:
+            cuda_str = "unknown"
 
-        pci = nvml.nvmlDeviceGetPciInfo(handle)
-        bus_id = _decode(pci.busId)
+        try:
+            pci = nvml.nvmlDeviceGetPciInfo(handle)
+            bus_id = _decode(pci.busId)
+        except nvml.NVMLError:
+            bus_id = "unknown"
 
         info = GPUInfo(
             index=device_index,
             name=name,
             uuid=uuid,
-            memory_total=memory.total,
+            memory_total=memory_total,
             driver_version=driver,
             cuda_version=cuda_str,
             pci_bus_id=bus_id,

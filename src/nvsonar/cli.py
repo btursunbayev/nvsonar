@@ -90,8 +90,11 @@ def report(
         recs = recommend(bottleneck=bottleneck, outliers=gpu_outliers)
 
         # save to history
-        from nvsonar.history import save_from_metrics
-        save_from_metrics(i, info.name, metrics, bottleneck)
+        try:
+            from nvsonar.history import save_from_metrics
+            save_from_metrics(i, info.name, metrics, bottleneck)
+        except Exception:
+            pass
 
         if json:
             json_reports.append(to_json(info, metrics, bottleneck, recommendations=recs))
@@ -173,7 +176,7 @@ def benchmark(
             table.add_row("Memory Write", f"{result.write_gbps:.1f} GB/s", "", "")
             table.add_row("Memory Copy", f"{result.copy_gbps:.1f} GB/s", spec_str, score_str)
         except RuntimeError as e:
-            table.add_row("Memory", f"[red]failed[/red]", "", "")
+            table.add_row("Memory", f"[red]failed: {e}[/red]", "", "")
 
     if compute or run_all:
         try:
@@ -190,7 +193,7 @@ def benchmark(
 
             table.add_row("FP32 Compute", f"{result.tflops:.2f} TFLOPS", spec_str, score_str)
         except RuntimeError as e:
-            table.add_row("Compute", f"[red]failed[/red]", "", "")
+            table.add_row("Compute", f"[red]failed: {e}[/red]", "", "")
 
     if pcie or run_all:
         try:
@@ -208,7 +211,7 @@ def benchmark(
             table.add_row("PCIe Host->GPU", f"{result.h2d_gbps:.1f} GB/s", "", "")
             table.add_row("PCIe GPU->Host", f"{result.d2h_gbps:.1f} GB/s", spec_str, score_str)
         except RuntimeError as e:
-            table.add_row("PCIe", f"[red]failed[/red]", "", "")
+            table.add_row("PCIe", f"[red]failed: {e}[/red]", "", "")
 
     header = Text()
     header.append(f"GPU 0: {info.name}", style="bold")
