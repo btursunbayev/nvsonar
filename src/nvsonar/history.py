@@ -89,10 +89,13 @@ def load(gpu_index: int | None = None, days: int = 7) -> list[HistoryEntry]:
                 line = line.strip()
                 if not line:
                     continue
-                data = json.loads(line)
-                if data["timestamp"] < cutoff:
+                try:
+                    data = json.loads(line)
+                    if data.get("timestamp", 0) < cutoff:
+                        continue
+                    entries.append(HistoryEntry(**data))
+                except (json.JSONDecodeError, TypeError, KeyError):
                     continue
-                entries.append(HistoryEntry(**data))
 
     entries.sort(key=lambda e: e.timestamp)
     return entries

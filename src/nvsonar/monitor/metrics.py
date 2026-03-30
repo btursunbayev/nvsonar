@@ -47,6 +47,9 @@ class Metrics:
     # Processes
     processes: list[GPUProcess] = field(default_factory=list)
 
+    # Collection errors
+    errors: list[str] = field(default_factory=list)
+
     @property
     def memory_used_pct(self) -> float:
         if self.memory_total == 0:
@@ -79,19 +82,22 @@ class MetricsCollector:
     def collect(self) -> Metrics:
         """Collect current metrics snapshot"""
         h = self._handle
+        errors = []
 
         try:
             utilization = nvml.nvmlDeviceGetUtilizationRates(h)
             gpu_util = utilization.gpu
             mem_util = utilization.memory
-            # print(f"util gpu={gpu_util}% mem={mem_util}%")
         except nvml.NVMLError:
             gpu_util = 0
             mem_util = 0
-            # print(f"util: failed to read")
+            errors.append("Failed to read utilization, driver may not support this query")
 
-        memory_info = nvml.nvmlDeviceGetMemoryInfo(h)
-        # print(f"vram {memory_info.used // (1024**2)}MB / {memory_info.total // (1024**2)}MB")
+        try:
+            memory_info = nvml.nvmlDeviceGetMemoryInfo(h)
+        except nvml.NVMLError:
+            memory_info = type("MemInfo", (), {"used": 0, "total": 0})()
+            errors.append("Failed to read memory info, driver may not support nvmlDeviceGetMemoryInfo_v2")
 
         try:
             gpu_clock = nvml.nvmlDeviceGetClockInfo(h, nvml.NVML_CLOCK_GRAPHICS)
@@ -108,14 +114,11 @@ class MetricsCollector:
         except nvml.NVMLError:
             max_gpu_clock = 0
 
-        # print(f"clocks gpu={gpu_clock}/{max_gpu_clock}MHz mem={mem_clock}MHz")
-
         try:
             temperature = nvml.nvmlDeviceGetTemperature(h, nvml.NVML_TEMPERATURE_GPU)
-            # print(f"temp {temperature}C")
         except nvml.NVMLError:
             temperature = 0
-            # print(f"temp: failed to read")
+            errors.append("Failed to read temperature")
 
         try:
             power_usage = nvml.nvmlDeviceGetPowerUsage(h) / 1000.0
@@ -129,10 +132,8 @@ class MetricsCollector:
 
         try:
             fan_speed = nvml.nvmlDeviceGetFanSpeed(h)
-            # print(f"fan {fan_speed}%")
         except nvml.NVMLError:
             fan_speed = None
-            # print("fan: not available")
 
         throttle = decode_throttle_reasons(h)
         pcie = get_pcie_info(h)
@@ -155,4 +156,5 @@ class MetricsCollector:
             pcie=pcie,
             ecc=ecc,
             processes=processes,
+            errors=errors,
         )

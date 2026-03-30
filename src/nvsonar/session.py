@@ -111,6 +111,9 @@ class Session:
 
     def stop(self) -> SessionResult:
         """Stop monitoring and return analysis"""
+        if self._gpu_indices is None:
+            return SessionResult(duration_seconds=0, gpu_summaries=[], outlier_warnings=[])
+
         self._stop_event.set()
         if self._thread:
             self._thread.join(timeout=5)

@@ -233,4 +233,11 @@ def print_report(
     else:
         content.add_row(Text("    (none)"))
 
+    # collection errors
+    if metrics.errors:
+        content.add_row(Text())
+        content.add_row(Text("  Errors:", style="bold red"))
+        for err in metrics.errors:
+            content.add_row(Text(f"    {err}", style="red"))
+
     console.print(Panel(content, title=header, border_style="white"))

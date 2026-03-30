@@ -1,5 +1,39 @@
 # Changelog
 
+## [2.1.1] - 2026-03-30
+
+### Fixed
+- Handle nvmlDeviceGetMemoryInfo_v2 failure on unsupported hardware (NVIDIA GB10 Spark)
+- Handle nvmlSystemGetCudaDriverVersion and nvmlDeviceGetPciInfo failures gracefully
+- Corrupted or schema-mismatched history files no longer crash `nvsonar history`
+- History save failure no longer crashes `nvsonar report`
+- Benchmark failures now show error reason instead of just "failed"
+- Session stop() without start() no longer crashes
+- Collection errors shown in report output
+
+### Added
+- TUI tabs for Report, Benchmark, History, Peaks
+- Demo GIF in README
+- Color-coded metrics (temperature, VRAM, power, throttle) based on severity
+- `errors` field in Metrics for tracking collection failures
+
+### Changed
+- Unified design across all commands (white borders, consistent headers, no dim text)
+- README restructured with GIF on top
+
+## [2.1.0] - 2026-03-29
+
+### Added
+- GPU performance benchmarks: `nvsonar benchmark` (memory bandwidth, compute throughput, PCIe speed)
+- Historical tracking: `nvsonar history` with trend analysis
+- Session monitoring Python API: `nvsonar.start()`, `nvsonar.stop()`, `nvsonar.monitor()`
+- GPU process list in report and JSON output
+- CSV process fields
+- `--version` flag
+
+### Changed
+- CLI report loop refactored (no duplicate GPU iteration for CSV)
+
 ## [2.0.0] - 2026-03-27
 
 ### Added
