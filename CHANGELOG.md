@@ -1,5 +1,19 @@
 # Changelog
 
+## [2.2.0] - 2026-03-31
+
+### Changed
+- Metrics are now nullable: unavailable metrics show "N/A" instead of misleading zeros
+- PCIe section hidden on GPUs without PCIe (NVIDIA GB10 Spark, integrated GPUs)
+- Clock reduction warning only fires when throttle data confirms an issue
+- Health score treats unavailable metrics as neutral instead of penalizing
+
+### Fixed
+- JSON output returns `null` instead of crashing on unavailable metrics
+- Temporal analysis skips None values instead of crashing
+- History handles nullable fields correctly
+
+
 ## [2.1.2] - 2026-03-30
 
 ### Fixed

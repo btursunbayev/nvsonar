@@ -160,31 +160,49 @@ class LiveMetrics(Static):
                 table.add_column("Value")
 
                 # utilization bars
-                gpu_bar = _make_bar(m.gpu_utilization, 100)
-                table.add_row("GPU Utilization", f"{gpu_bar} {m.gpu_utilization}%")
+                if m.gpu_utilization is not None:
+                    gpu_bar = _make_bar(m.gpu_utilization, 100)
+                    table.add_row("GPU Utilization", f"{gpu_bar} {m.gpu_utilization}%")
+                else:
+                    table.add_row("GPU Utilization", "N/A")
 
-                mem_bar = _make_bar(m.memory_utilization, 100)
-                table.add_row("Memory Controller", f"{mem_bar} {m.memory_utilization}%")
+                if m.memory_utilization is not None:
+                    mem_bar = _make_bar(m.memory_utilization, 100)
+                    table.add_row("Memory Controller", f"{mem_bar} {m.memory_utilization}%")
+                else:
+                    table.add_row("Memory Controller", "N/A")
 
                 # VRAM
-                vram_bar = _make_bar(m.memory_used, m.memory_total)
-                table.add_row(
-                    "VRAM",
-                    f"{vram_bar} {m.memory_used / (1024**3):.1f} / "
-                    f"{m.memory_total / (1024**3):.1f} GB "
-                    f"({m.memory_used_pct:.0f}%)",
-                )
+                if m.memory_total is not None and m.memory_total > 0:
+                    vram_bar = _make_bar(m.memory_used or 0, m.memory_total)
+                    mem_pct = m.memory_used_pct
+                    vram_str = (
+                        f"{vram_bar} {(m.memory_used or 0) / (1024**3):.1f} / "
+                        f"{m.memory_total / (1024**3):.1f} GB"
+                    )
+                    if mem_pct is not None:
+                        vram_str += f" ({mem_pct:.0f}%)"
+                    table.add_row("VRAM", vram_str)
+                else:
+                    table.add_row("VRAM", "N/A")
 
                 # clocks
-                clock_str = f"{m.gpu_clock} / {m.max_gpu_clock} MHz"
-                if m.clock_reduction_pct > 1:
-                    clock_str += f" ({m.clock_reduction_pct:.0f}% reduced)"
-                table.add_row("Clocks", clock_str)
+                if m.gpu_clock is not None and m.max_gpu_clock is not None:
+                    clock_str = f"{m.gpu_clock} / {m.max_gpu_clock} MHz"
+                    clock_drop = m.clock_reduction_pct
+                    if clock_drop is not None and clock_drop > 1:
+                        clock_str += f" ({clock_drop:.0f}% reduced)"
+                    table.add_row("Clocks", clock_str)
+                else:
+                    table.add_row("Clocks", "N/A")
 
                 # temperature
-                temp_color = "red" if m.temperature > 85 else "yellow" if m.temperature > 75 else "green" if m.temperature < 60 else ""
-                temp_str = f"[{temp_color}]{m.temperature}C[/{temp_color}]" if temp_color else f"{m.temperature}C"
-                table.add_row("Temperature", temp_str)
+                if m.temperature is not None:
+                    temp_color = "red" if m.temperature > 85 else "yellow" if m.temperature > 75 else "green" if m.temperature < 60 else ""
+                    temp_str = f"[{temp_color}]{m.temperature}C[/{temp_color}]" if temp_color else f"{m.temperature}C"
+                    table.add_row("Temperature", temp_str)
+                else:
+                    table.add_row("Temperature", "N/A")
 
                 # power
                 if m.power_usage is not None:
