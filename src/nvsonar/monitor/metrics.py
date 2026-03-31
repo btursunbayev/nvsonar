@@ -12,21 +12,21 @@ from .throttle import decode_throttle_reasons, ThrottleStatus
 class Metrics:
     """GPU metrics snapshot"""
 
-    # Utilization
-    gpu_utilization: int
-    memory_utilization: int
+    # Utilization (None = unavailable)
+    gpu_utilization: int | None
+    memory_utilization: int | None
 
-    # Memory
-    memory_used: int
-    memory_total: int
+    # Memory (None = unavailable)
+    memory_used: int | None
+    memory_total: int | None
 
     # Clocks
-    gpu_clock: int
-    memory_clock: int
-    max_gpu_clock: int
+    gpu_clock: int | None
+    memory_clock: int | None
+    max_gpu_clock: int | None
 
     # Thermal
-    temperature: float
+    temperature: float | None
 
     # Power
     power_usage: float | None
@@ -51,9 +51,11 @@ class Metrics:
     errors: list[str] = field(default_factory=list)
 
     @property
-    def memory_used_pct(self) -> float:
+    def memory_used_pct(self) -> float | None:
+        if self.memory_total is None or self.memory_used is None:
+            return None
         if self.memory_total == 0:
-            return 0.0
+            return None
         return (self.memory_used / self.memory_total) * 100
 
     @property
@@ -65,9 +67,11 @@ class Metrics:
         return (self.power_usage / self.power_limit) * 100
 
     @property
-    def clock_reduction_pct(self) -> float:
+    def clock_reduction_pct(self) -> float | None:
+        if self.max_gpu_clock is None or self.gpu_clock is None:
+            return None
         if self.max_gpu_clock == 0:
-            return 0.0
+            return None
         reduction = 1 - (self.gpu_clock / self.max_gpu_clock)
         return max(0.0, reduction * 100)
 
@@ -89,36 +93,39 @@ class MetricsCollector:
             gpu_util = utilization.gpu
             mem_util = utilization.memory
         except nvml.NVMLError:
-            gpu_util = 0
-            mem_util = 0
-            errors.append("Failed to read utilization, driver may not support this query")
+            gpu_util = None
+            mem_util = None
+            errors.append("Utilization unavailable")
 
         try:
             memory_info = nvml.nvmlDeviceGetMemoryInfo(h)
+            mem_used = memory_info.used
+            mem_total = memory_info.total
         except nvml.NVMLError:
-            memory_info = type("MemInfo", (), {"used": 0, "total": 0})()
-            errors.append("Failed to read memory info, driver may not support nvmlDeviceGetMemoryInfo_v2")
+            mem_used = None
+            mem_total = None
+            errors.append("Memory info unavailable")
 
         try:
             gpu_clock = nvml.nvmlDeviceGetClockInfo(h, nvml.NVML_CLOCK_GRAPHICS)
         except nvml.NVMLError:
-            gpu_clock = 0
+            gpu_clock = None
 
         try:
             mem_clock = nvml.nvmlDeviceGetClockInfo(h, nvml.NVML_CLOCK_MEM)
         except nvml.NVMLError:
-            mem_clock = 0
+            mem_clock = None
 
         try:
             max_gpu_clock = nvml.nvmlDeviceGetMaxClockInfo(h, nvml.NVML_CLOCK_GRAPHICS)
         except nvml.NVMLError:
-            max_gpu_clock = 0
+            max_gpu_clock = None
 
         try:
             temperature = nvml.nvmlDeviceGetTemperature(h, nvml.NVML_TEMPERATURE_GPU)
         except nvml.NVMLError:
-            temperature = 0
-            errors.append("Failed to read temperature")
+            temperature = None
+            errors.append("Temperature unavailable")
 
         try:
             power_usage = nvml.nvmlDeviceGetPowerUsage(h) / 1000.0
@@ -143,8 +150,8 @@ class MetricsCollector:
         return Metrics(
             gpu_utilization=gpu_util,
             memory_utilization=mem_util,
-            memory_used=memory_info.used,
-            memory_total=memory_info.total,
+            memory_used=mem_used,
+            memory_total=mem_total,
             gpu_clock=gpu_clock,
             memory_clock=mem_clock,
             max_gpu_clock=max_gpu_clock,

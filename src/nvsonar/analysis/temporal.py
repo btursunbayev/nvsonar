@@ -65,14 +65,17 @@ class TemporalAnalyzer:
 
     def update(self, metrics: Metrics):
         """Add a new metrics snapshot to the history"""
-        self._clock_history.append(metrics.gpu_clock)
-        self._temp_history.append(metrics.temperature)
-        self._gpu_util_history.append(metrics.gpu_utilization)
-        self._mem_used_history.append(metrics.memory_used_pct)
+        if metrics.gpu_clock is not None:
+            self._clock_history.append(metrics.gpu_clock)
+            self._clock_stats.update(metrics.gpu_clock)
+        if metrics.temperature is not None:
+            self._temp_history.append(metrics.temperature)
+        if metrics.gpu_utilization is not None:
+            self._gpu_util_history.append(metrics.gpu_utilization)
+        if metrics.memory_used_pct is not None:
+            self._mem_used_history.append(metrics.memory_used_pct)
         if metrics.power_usage is not None:
             self._power_history.append(metrics.power_usage)
-
-        self._clock_stats.update(metrics.gpu_clock)
         self._sample_count += 1
 
     @property

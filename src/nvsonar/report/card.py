@@ -16,9 +16,13 @@ def _health_score(metrics: Metrics, bottleneck: BottleneckResult) -> int:
     """Compute a 0-100 health score from metrics and analysis"""
     scores = {}
 
+    is_idle = bottleneck.bottleneck == BottleneckType.IDLE
+
     # thermal: 100 if <70C, linear decay to 0 at 95C
     temp = metrics.temperature
-    if temp < 70:
+    if temp is None:
+        scores["thermal"] = 100
+    elif temp < 70:
         scores["thermal"] = 100
     elif temp < 95:
         scores["thermal"] = int(100 * (95 - temp) / 25)
@@ -34,20 +38,25 @@ def _health_score(metrics: Metrics, bottleneck: BottleneckResult) -> int:
     else:
         scores["power"] = 50
 
-    is_idle = bottleneck.bottleneck == BottleneckType.IDLE
-
-    # clocks: 100 minus reduction percentage (skip penalty for idle GPUs)
-    scores["clocks"] = 100 if is_idle else max(0, int(100 - metrics.clock_reduction_pct))
+    # clocks: 100 minus reduction percentage
+    clock_drop = metrics.clock_reduction_pct
+    if is_idle or clock_drop is None:
+        scores["clocks"] = 100
+    else:
+        scores["clocks"] = max(0, int(100 - clock_drop))
 
     # memory: 100 if <80% used, linear decay to 0 at 100%
     mem_pct = metrics.memory_used_pct
-    if mem_pct < 80:
+    if mem_pct is None or mem_pct < 80:
         scores["memory"] = 100
     else:
         scores["memory"] = max(0, int(100 * (100 - mem_pct) / 20))
 
-    # pcie: 100 if at max, 60 if degraded (skip penalty for idle GPUs)
-    scores["pcie"] = 100 if (is_idle or not metrics.pcie.is_degraded) else 60
+    # pcie: 100 if at max, 60 if degraded (skip if no PCIe or idle)
+    if is_idle or metrics.pcie.max_link_gen == 0:
+        scores["pcie"] = 100
+    else:
+        scores["pcie"] = 60 if metrics.pcie.is_degraded else 100
 
     # ecc: 100 if no errors, 30 if correctable, 0 if uncorrectable
     if metrics.ecc.uncorrectable > 0:
@@ -74,7 +83,7 @@ def _health_score(metrics: Metrics, bottleneck: BottleneckResult) -> int:
         total *= 0.3
     if metrics.throttle.worst_severity == "critical":
         total *= 0.7
-    if metrics.pcie.is_degraded and not is_idle:
+    if metrics.pcie.is_degraded and not is_idle and metrics.pcie.max_link_gen > 0:
         total *= 0.85
 
     return max(0, min(100, int(total)))
@@ -127,36 +136,50 @@ def print_report(
     table.add_column("Metric", width=20)
     table.add_column("Value")
 
-    # color values by severity
-    gpu_util = metrics.gpu_utilization
-    table.add_row("GPU utilization", f"{gpu_util}%")
+    # show N/A for unavailable metrics
+    if metrics.gpu_utilization is not None:
+        table.add_row("GPU utilization", f"{metrics.gpu_utilization}%")
+    else:
+        table.add_row("GPU utilization", "N/A")
 
-    mem_util = metrics.memory_utilization
-    table.add_row("Memory controller", f"{mem_util}%")
+    if metrics.memory_utilization is not None:
+        table.add_row("Memory controller", f"{metrics.memory_utilization}%")
+    else:
+        table.add_row("Memory controller", "N/A")
 
     mem_pct = metrics.memory_used_pct
-    mem_color = "red" if mem_pct > 90 else "yellow" if mem_pct > 75 else ""
-    table.add_row(
-        "VRAM",
-        f"[{mem_color}]{metrics.memory_used // (1024**2)}MB / "
-        f"{metrics.memory_total // (1024**2)}MB "
-        f"({mem_pct:.0f}%)[/{mem_color}]" if mem_color else
-        f"{metrics.memory_used // (1024**2)}MB / "
-        f"{metrics.memory_total // (1024**2)}MB "
-        f"({mem_pct:.0f}%)",
-    )
+    if metrics.memory_total is not None and metrics.memory_total > 0:
+        mem_color = "red" if mem_pct and mem_pct > 90 else "yellow" if mem_pct and mem_pct > 75 else ""
+        vram_str = (
+            f"{metrics.memory_used // (1024**2)}MB / "
+            f"{metrics.memory_total // (1024**2)}MB"
+        )
+        if mem_pct is not None:
+            vram_str += f" ({mem_pct:.0f}%)"
+        if mem_color:
+            vram_str = f"[{mem_color}]{vram_str}[/{mem_color}]"
+        table.add_row("VRAM", vram_str)
+    else:
+        table.add_row("VRAM", "N/A")
 
-    clock_str = f"{metrics.gpu_clock} / {metrics.max_gpu_clock} MHz"
-    if metrics.clock_reduction_pct > 15:
-        clock_str += f" [yellow]({metrics.clock_reduction_pct:.0f}% reduced)[/yellow]"
-    elif metrics.clock_reduction_pct > 1:
-        clock_str += f" ({metrics.clock_reduction_pct:.0f}% reduced)"
-    table.add_row("Clocks", clock_str)
+    if metrics.gpu_clock is not None and metrics.max_gpu_clock is not None:
+        clock_str = f"{metrics.gpu_clock} / {metrics.max_gpu_clock} MHz"
+        clock_drop = metrics.clock_reduction_pct
+        if clock_drop is not None and clock_drop > 15:
+            clock_str += f" [yellow]({clock_drop:.0f}% reduced)[/yellow]"
+        elif clock_drop is not None and clock_drop > 1:
+            clock_str += f" ({clock_drop:.0f}% reduced)"
+        table.add_row("Clocks", clock_str)
+    else:
+        table.add_row("Clocks", "N/A")
 
-    temp = metrics.temperature
-    temp_color = "red" if temp > 85 else "yellow" if temp > 75 else "green" if temp < 60 else ""
-    temp_str = f"[{temp_color}]{temp}C[/{temp_color}]" if temp_color else f"{temp}C"
-    table.add_row("Temperature", temp_str)
+    if metrics.temperature is not None:
+        temp = metrics.temperature
+        temp_color = "red" if temp > 85 else "yellow" if temp > 75 else "green" if temp < 60 else ""
+        temp_str = f"[{temp_color}]{temp}C[/{temp_color}]" if temp_color else f"{temp}C"
+        table.add_row("Temperature", temp_str)
+    else:
+        table.add_row("Temperature", "N/A")
 
     table.add_row("Driver", gpu_info.driver_version)
     table.add_row("CUDA", gpu_info.cuda_version)
@@ -175,10 +198,11 @@ def print_report(
         table.add_row("Power", pwr_str)
 
     pcie = metrics.pcie
-    pcie_str = f"Gen{pcie.current_link_gen} x{pcie.current_link_width}"
-    if pcie.is_degraded:
-        pcie_str += f" [yellow](max Gen{pcie.max_link_gen} x{pcie.max_link_width})[/yellow]"
-    table.add_row("PCIe", pcie_str)
+    if pcie.max_link_gen > 0:
+        pcie_str = f"Gen{pcie.current_link_gen} x{pcie.current_link_width}"
+        if pcie.is_degraded:
+            pcie_str += f" [yellow](max Gen{pcie.max_link_gen} x{pcie.max_link_width})[/yellow]"
+        table.add_row("PCIe", pcie_str)
 
     if metrics.throttle.is_throttled:
         table.add_row("Throttle", f"[red]{metrics.throttle.summary}[/red]")

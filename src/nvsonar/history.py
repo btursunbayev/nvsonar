@@ -17,14 +17,14 @@ class HistoryEntry:
     gpu_name: str
 
     # metrics
-    gpu_utilization: int
-    memory_utilization: int
-    memory_used_pct: float
-    temperature: float
+    gpu_utilization: int | None
+    memory_utilization: int | None
+    memory_used_pct: float | None
+    temperature: float | None
     power_usage: float | None
-    gpu_clock: int
-    max_gpu_clock: int
-    clock_reduction_pct: float
+    gpu_clock: int | None
+    max_gpu_clock: int | None
+    clock_reduction_pct: float | None
 
     # health
     bottleneck: str
@@ -123,22 +123,26 @@ def analyze_trends(entries: list[HistoryEntry]) -> list[Trend]:
     second = entries[mid:]
 
     # temperature trend
-    avg_temp_first = sum(e.temperature for e in first) / len(first)
-    avg_temp_second = sum(e.temperature for e in second) / len(second)
-    temp_diff = avg_temp_second - avg_temp_first
+    temps_first = [e.temperature for e in first if e.temperature is not None]
+    temps_second = [e.temperature for e in second if e.temperature is not None]
 
-    if temp_diff > 3:
-        trends.append(Trend(
-            "temperature", "rising",
-            f"Average temperature increased {temp_diff:.1f}C "
-            f"({avg_temp_first:.0f}C -> {avg_temp_second:.0f}C)",
-        ))
-    elif temp_diff < -3:
-        trends.append(Trend(
-            "temperature", "falling",
-            f"Average temperature decreased {abs(temp_diff):.1f}C "
-            f"({avg_temp_first:.0f}C -> {avg_temp_second:.0f}C)",
-        ))
+    if temps_first and temps_second:
+        avg_temp_first = sum(temps_first) / len(temps_first)
+        avg_temp_second = sum(temps_second) / len(temps_second)
+        temp_diff = avg_temp_second - avg_temp_first
+
+        if temp_diff > 3:
+            trends.append(Trend(
+                "temperature", "rising",
+                f"Average temperature increased {temp_diff:.1f}C "
+                f"({avg_temp_first:.0f}C -> {avg_temp_second:.0f}C)",
+            ))
+        elif temp_diff < -3:
+            trends.append(Trend(
+                "temperature", "falling",
+                f"Average temperature decreased {abs(temp_diff):.1f}C "
+                f"({avg_temp_first:.0f}C -> {avg_temp_second:.0f}C)",
+            ))
 
     # ECC error trend
     ecc_first = sum(e.ecc_correctable + e.ecc_uncorrectable for e in first)
@@ -163,8 +167,8 @@ def analyze_trends(entries: list[HistoryEntry]) -> list[Trend]:
         ))
 
     # clock degradation
-    clocks_first = [e.gpu_clock for e in first if e.gpu_utilization > 50]
-    clocks_second = [e.gpu_clock for e in second if e.gpu_utilization > 50]
+    clocks_first = [e.gpu_clock for e in first if e.gpu_clock is not None and e.gpu_utilization is not None and e.gpu_utilization > 50]
+    clocks_second = [e.gpu_clock for e in second if e.gpu_clock is not None and e.gpu_utilization is not None and e.gpu_utilization > 50]
 
     if clocks_first and clocks_second:
         avg_clock_first = sum(clocks_first) / len(clocks_first)
