@@ -245,6 +245,18 @@ def _from_pattern(pattern: Pattern) -> Recommendation | None:
                     "Will eventually OOM if trend continues",
                 ],
             )
+        case "throttle_cycling":
+            return Recommendation(
+                priority=1 if pattern.severity == "critical" else 2,
+                title="GPU throttle is cycling on and off",
+                explanation=pattern.detail,
+                actions=[
+                    "GPU is repeatedly hitting and recovering from a limit",
+                    "Check if power limit is set too close to workload demand",
+                    "Improve cooling to prevent thermal cycling",
+                    "Consider locking clocks: nvidia-smi -lgc <min>,<max>",
+                ],
+            )
     return None
 
 

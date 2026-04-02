@@ -63,6 +63,11 @@ class TemporalAnalyzer:
         self._clock_stats = _RollingStats()
         self._sample_count = 0
 
+        # throttle tracking
+        self._throttle_history: deque[bool] = deque(maxlen=window_size)
+        self._throttle_transitions = 0
+        self._last_throttled: bool | None = None
+
     def update(self, metrics: Metrics):
         """Add a new metrics snapshot to the history"""
         if metrics.gpu_clock is not None:
@@ -76,6 +81,14 @@ class TemporalAnalyzer:
             self._mem_used_history.append(metrics.memory_used_pct)
         if metrics.power_usage is not None:
             self._power_history.append(metrics.power_usage)
+
+        # track throttle state transitions
+        throttled = metrics.throttle.is_throttled
+        self._throttle_history.append(throttled)
+        if self._last_throttled is not None and throttled != self._last_throttled:
+            self._throttle_transitions += 1
+        self._last_throttled = throttled
+
         self._sample_count += 1
 
     @property
@@ -105,6 +118,10 @@ class TemporalAnalyzer:
         creep = self._detect_memory_creep()
         if creep:
             patterns.append(creep)
+
+        throttle = self._detect_throttle_frequency()
+        if throttle:
+            patterns.append(throttle)
 
         return patterns
 
@@ -247,4 +264,35 @@ class TemporalAnalyzer:
             "memory_creep", "warning",
             f"VRAM usage grew {growth:.1f}% over last {len(values)} samples "
             f"({start_avg:.1f}% to {end_avg:.1f}%), possible memory leak",
+        )
+
+    def _detect_throttle_frequency(self) -> Pattern | None:
+        """Detect intermittent throttling (on/off cycling)"""
+        if len(self._throttle_history) < 15:
+            return None
+
+        values = list(self._throttle_history)
+        throttled_count = sum(1 for v in values if v)
+        total = len(values)
+
+        # skip if never throttled or always throttled
+        if throttled_count == 0 or throttled_count == total:
+            return None
+
+        # count transitions within the window
+        transitions = sum(
+            1 for i in range(1, total)
+            if values[i] != values[i - 1]
+        )
+
+        if transitions < 3:
+            return None
+
+        throttled_pct = (throttled_count / total) * 100
+        severity = "critical" if transitions > 10 else "warning"
+
+        return Pattern(
+            "throttle_cycling", severity,
+            f"Throttle triggered {transitions} times in last {total} samples "
+            f"(throttled {throttled_pct:.0f}% of the time)",
         )
