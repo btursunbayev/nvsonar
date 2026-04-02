@@ -24,6 +24,8 @@ from nvsonar.analysis import classify, TemporalAnalyzer, recommend
 UPDATE_INTERVAL = 0.5
 PEAK_WINDOW = 60.0
 
+_SPARK_CHARS = "▁▂▃▄▅▆▇█"
+
 
 def _make_bar(value: float, max_value: float, width: int = 20) -> str:
     """Create a text progress bar"""
@@ -35,6 +37,28 @@ def _make_bar(value: float, max_value: float, width: int = 20) -> str:
     filled = int(ratio * width)
     empty = width - filled
     return "█" * filled + "░" * empty
+
+
+def _sparkline(values: list[float | None], width: int = 20) -> str:
+    """Render a sparkline from recent values"""
+    clean = [v for v in values if v is not None]
+    if len(clean) < 2:
+        return ""
+
+    # take last `width` points
+    clean = clean[-width:]
+
+    lo, hi = min(clean), max(clean)
+    span = hi - lo
+    if span == 0:
+        return _SPARK_CHARS[3] * len(clean)
+
+    out = []
+    for v in clean:
+        idx = int((v - lo) / span * 7)
+        idx = min(idx, 7)
+        out.append(_SPARK_CHARS[idx])
+    return "".join(out)
 
 
 @dataclass
@@ -154,23 +178,31 @@ class LiveMetrics(Static):
                 ))
                 self._clean_old_snapshots(device_index, current_time)
 
+                # build sparkline data from history
+                hist = list(self.history.get(device_index, []))
+                spark_gpu = _sparkline([s.gpu_utilization for s in hist])
+                spark_temp = _sparkline([s.temperature for s in hist])
+                spark_power = _sparkline([s.power_usage for s in hist])
+                spark_mem = _sparkline([s.memory_used for s in hist])
+
                 # build display
                 table = Table(show_header=True, box=None, padding=(0, 1), show_lines=False)
                 table.add_column("Metric")
                 table.add_column("Value")
+                table.add_column("History", style="dim")
 
                 # utilization bars
                 if m.gpu_utilization is not None:
                     gpu_bar = _make_bar(m.gpu_utilization, 100)
-                    table.add_row("GPU Utilization", f"{gpu_bar} {m.gpu_utilization}%")
+                    table.add_row("GPU Utilization", f"{gpu_bar} {m.gpu_utilization}%", spark_gpu)
                 else:
-                    table.add_row("GPU Utilization", "N/A")
+                    table.add_row("GPU Utilization", "N/A", "")
 
                 if m.memory_utilization is not None:
                     mem_bar = _make_bar(m.memory_utilization, 100)
-                    table.add_row("Memory Controller", f"{mem_bar} {m.memory_utilization}%")
+                    table.add_row("Memory Controller", f"{mem_bar} {m.memory_utilization}%", "")
                 else:
-                    table.add_row("Memory Controller", "N/A")
+                    table.add_row("Memory Controller", "N/A", "")
 
                 # VRAM
                 if m.memory_total is not None and m.memory_total > 0:
@@ -182,9 +214,9 @@ class LiveMetrics(Static):
                     )
                     if mem_pct is not None:
                         vram_str += f" ({mem_pct:.0f}%)"
-                    table.add_row("VRAM", vram_str)
+                    table.add_row("VRAM", vram_str, spark_mem)
                 else:
-                    table.add_row("VRAM", "N/A")
+                    table.add_row("VRAM", "N/A", "")
 
                 # clocks
                 if m.gpu_clock is not None and m.max_gpu_clock is not None:
@@ -192,17 +224,17 @@ class LiveMetrics(Static):
                     clock_drop = m.clock_reduction_pct
                     if clock_drop is not None and clock_drop > 1:
                         clock_str += f" ({clock_drop:.0f}% reduced)"
-                    table.add_row("Clocks", clock_str)
+                    table.add_row("Clocks", clock_str, "")
                 else:
-                    table.add_row("Clocks", "N/A")
+                    table.add_row("Clocks", "N/A", "")
 
                 # temperature
                 if m.temperature is not None:
                     temp_color = "red" if m.temperature > 85 else "yellow" if m.temperature > 75 else "green" if m.temperature < 60 else ""
                     temp_str = f"[{temp_color}]{m.temperature}C[/{temp_color}]" if temp_color else f"{m.temperature}C"
-                    table.add_row("Temperature", temp_str)
+                    table.add_row("Temperature", temp_str, spark_temp)
                 else:
-                    table.add_row("Temperature", "N/A")
+                    table.add_row("Temperature", "N/A", "")
 
                 # power
                 if m.power_usage is not None:
@@ -211,47 +243,49 @@ class LiveMetrics(Static):
                         power_str = f"{power_bar} {m.power_usage:.1f}W / {m.power_limit:.1f}W"
                     else:
                         power_str = f"{m.power_usage:.1f}W"
-                    table.add_row("Power", power_str)
+                    table.add_row("Power", power_str, spark_power)
 
                 # fan
                 if m.fan_speed is not None:
                     fan_bar = _make_bar(m.fan_speed, 100)
-                    table.add_row("Fan Speed", f"{fan_bar} {m.fan_speed}%")
+                    table.add_row("Fan Speed", f"{fan_bar} {m.fan_speed}%", "")
 
                 # throttle
                 if m.throttle.is_throttled:
-                    table.add_row("Throttle", f"[red]{m.throttle.summary}[/red]")
+                    table.add_row("Throttle", f"[red]{m.throttle.summary}[/red]", "")
                 else:
-                    table.add_row("Throttle", f"[green]{m.throttle.summary}[/green]")
+                    table.add_row("Throttle", f"[green]{m.throttle.summary}[/green]", "")
 
                 # bottleneck status
-                table.add_row("", "")
+                table.add_row("", "", "")
                 color = _bottleneck_color(bottleneck.bottleneck.value)
                 conf_pct = int(bottleneck.confidence * 100)
                 table.add_row(
                     "Status",
                     f"[{color}]{bottleneck.bottleneck.value}[/{color}] ({conf_pct}%)",
+                    "",
                 )
-                table.add_row("", bottleneck.detail)
+                table.add_row("", bottleneck.detail, "")
 
                 # warnings
                 for w in bottleneck.warnings:
-                    table.add_row("", f"[yellow]{w}[/yellow]")
+                    table.add_row("", f"[yellow]{w}[/yellow]", "")
 
                 # temporal patterns
                 for p in patterns:
                     pcolor = "red" if p.severity == "critical" else "yellow"
-                    table.add_row("", f"[{pcolor}]{p.detail}[/{pcolor}]")
+                    table.add_row("", f"[{pcolor}]{p.detail}[/{pcolor}]", "")
 
                 # top recommendation
                 if recs and recs[0].priority <= 2:
-                    table.add_row("", "")
+                    table.add_row("", "", "")
                     table.add_row(
                         "Action",
                         f"[bold]{recs[0].title}[/bold]",
+                        "",
                     )
                     for action in recs[0].actions[:2]:
-                        table.add_row("", f"  - {action}")
+                        table.add_row("", f"  - {action}", "")
 
                 device_name = self.device_names.get(device_index, f"GPU {device_index}")
                 panel = Panel(table, title=f"{device_name}", border_style="white")
