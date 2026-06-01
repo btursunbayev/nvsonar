@@ -196,12 +196,14 @@ def _collect_warnings(metrics: Metrics) -> list[str]:
         warnings.append(f"{metrics.ecc.correctable} correctable ECC errors, monitor for increase")
 
     # clock reduction without throttle reason
-    # only warn if throttle status is not "no throttling"
+    # suppress when status is "no throttling" or when GPU Idle is the explanation
+    is_gpu_idle = any(r.name == "GPU Idle" for r in metrics.throttle.active_reasons)
     if (
         metrics.clock_reduction_pct is not None
         and metrics.clock_reduction_pct > 15
         and not metrics.throttle.is_throttled
         and metrics.throttle.worst_severity != "ok"
+        and not is_gpu_idle
     ):
         warnings.append(
             f"Clocks {metrics.clock_reduction_pct:.0f}% below max "
