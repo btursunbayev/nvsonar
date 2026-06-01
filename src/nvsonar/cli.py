@@ -42,20 +42,50 @@ def main(
         sys.exit(1)
 
 
+def _parse_gpu_selection(value: str, device_count: int) -> list[int]:
+    """Resolve a --gpu argument into a list of device indices.
+
+    Accepts an empty string, "all", "-1", a single index, or a comma-separated list.
+    """
+    value = value.strip().lower()
+    if value in ("", "all", "-1"):
+        return list(range(device_count))
+
+    indices = []
+    for part in value.split(","):
+        part = part.strip()
+        if not part:
+            continue
+        try:
+            idx = int(part)
+        except ValueError:
+            raise typer.BadParameter(f"invalid GPU index: {part!r}")
+        if idx < 0 or idx >= device_count:
+            raise typer.BadParameter(f"GPU {idx} not found, {device_count} available")
+        if idx not in indices:
+            indices.append(idx)
+
+    if not indices:
+        raise typer.BadParameter("no GPU indices given")
+    return indices
+
+
 @app.command()
 def report(
     json: bool = typer.Option(False, "--json", help="Output as JSON"),
     csv: bool = typer.Option(False, "--csv", help="Output as CSV"),
-    gpu: int = typer.Option(-1, "--gpu", help="GPU index, -1 for all"),
+    plain: bool = typer.Option(False, "--plain", help="Plain text output without colors"),
+    gpu: str = typer.Option("", "--gpu", help="GPU index or comma-separated list (default: all)"),
 ):
     """One-shot GPU diagnostic report"""
-    if json and csv:
-        typer.echo("Error: --json and --csv are mutually exclusive", err=True)
+    exclusive = [f for f, on in [("--json", json), ("--csv", csv), ("--plain", plain)] if on]
+    if len(exclusive) > 1:
+        typer.echo(f"Error: {', '.join(exclusive)} are mutually exclusive", err=True)
         sys.exit(1)
 
     from nvsonar.analysis import classify, detect_outliers, recommend
     from nvsonar.monitor import MetricsCollector, get_device_count, get_gpu_info, initialize
-    from nvsonar.report import print_report, report_to_csv_row, to_csv, to_json
+    from nvsonar.report import print_report, print_report_plain, report_to_csv_row, to_csv, to_json
 
     if not initialize():
         typer.echo("Error: failed to initialize NVML, no NVIDIA GPU found", err=True)
@@ -66,27 +96,17 @@ def report(
         typer.echo("Error: no GPUs detected", err=True)
         sys.exit(1)
 
-    # which GPUs to report on
-    if gpu >= 0:
-        if gpu >= device_count:
-            typer.echo(f"Error: GPU {gpu} not found, {device_count} available", err=True)
-            sys.exit(1)
-        indices = [gpu]
-    else:
-        indices = list(range(device_count))
+    indices = _parse_gpu_selection(gpu, device_count)
 
-    # collect metrics for all requested GPUs
     all_metrics = {}
     for i in indices:
         collector = MetricsCollector(i)
         all_metrics[i] = collector.collect()
 
-    # run outlier detection if multiple GPUs
     outliers = []
     if len(all_metrics) > 1:
         outliers = detect_outliers(all_metrics)
 
-    # report per GPU
     json_reports = []
     csv_rows = []
     for i in indices:
@@ -97,11 +117,9 @@ def report(
         metrics = all_metrics[i]
         bottleneck = classify(metrics)
 
-        # outliers for this GPU
         gpu_outliers = [o for o in outliers if o.gpu_index == i]
         recs = recommend(bottleneck=bottleneck, outliers=gpu_outliers)
 
-        # save to history
         try:
             from nvsonar.history import save_from_metrics
 
@@ -113,6 +131,8 @@ def report(
             json_reports.append(to_json(info, metrics, bottleneck, recommendations=recs))
         elif csv:
             csv_rows.append(report_to_csv_row(info, metrics, bottleneck))
+        elif plain:
+            print_report_plain(info, metrics, bottleneck, recommendations=recs)
         else:
             print_report(info, metrics, bottleneck, recommendations=recs)
 

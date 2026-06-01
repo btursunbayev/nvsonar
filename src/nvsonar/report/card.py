@@ -272,3 +272,118 @@ def print_report(
             content.add_row(Text(f"    {err}", style="red"))
 
     console.print(Panel(content, title=header, border_style="white"))
+
+
+def print_report_plain(
+    gpu_info: GPUInfo,
+    metrics: Metrics,
+    bottleneck: BottleneckResult,
+    patterns: list[Pattern] | None = None,
+    recommendations: list[Recommendation] | None = None,
+):
+    """Print the diagnostic report in plain text, suitable for piping or logs"""
+    score = _health_score(metrics, bottleneck)
+    grade, _ = _grade(score)
+
+    lines: list[str] = []
+    lines.append(f"GPU {gpu_info.index}: {gpu_info.name}  Health: {grade} ({score}/100)")
+
+    def kv(key: str, value: str):
+        lines.append(f"  {key}: {value}")
+
+    if metrics.gpu_utilization is not None:
+        kv("GPU utilization", f"{metrics.gpu_utilization}%")
+    else:
+        kv("GPU utilization", "N/A")
+
+    if metrics.memory_utilization is not None:
+        kv("Memory controller", f"{metrics.memory_utilization}%")
+    else:
+        kv("Memory controller", "N/A")
+
+    if metrics.memory_total is not None and metrics.memory_total > 0:
+        vram_str = f"{metrics.memory_used // (1024**2)}MB / {metrics.memory_total // (1024**2)}MB"
+        mem_pct = metrics.memory_used_pct
+        if mem_pct is not None:
+            vram_str += f" ({mem_pct:.0f}%)"
+        kv("VRAM", vram_str)
+    else:
+        kv("VRAM", "N/A")
+
+    if metrics.gpu_clock is not None and metrics.max_gpu_clock is not None:
+        clock_str = f"{metrics.gpu_clock} / {metrics.max_gpu_clock} MHz"
+        clock_drop = metrics.clock_reduction_pct
+        if clock_drop is not None and clock_drop > 1:
+            clock_str += f" ({clock_drop:.0f}% reduced)"
+        kv("Clocks", clock_str)
+    else:
+        kv("Clocks", "N/A")
+
+    if metrics.temperature is not None:
+        kv("Temperature", f"{metrics.temperature}C")
+    else:
+        kv("Temperature", "N/A")
+
+    kv("Driver", gpu_info.driver_version)
+    kv("CUDA", gpu_info.cuda_version)
+
+    if metrics.power_usage is not None:
+        if metrics.power_limit is not None:
+            pwr_str = f"{metrics.power_usage:.0f}W / {metrics.power_limit:.0f}W"
+            pwr_pct = metrics.power_used_pct
+            if pwr_pct:
+                pwr_str += f" ({pwr_pct:.0f}%)"
+        else:
+            pwr_str = f"{metrics.power_usage:.0f}W"
+        kv("Power", pwr_str)
+
+    pcie = metrics.pcie
+    if pcie.max_link_gen > 0:
+        pcie_str = f"Gen{pcie.current_link_gen} x{pcie.current_link_width}"
+        if pcie.is_degraded:
+            pcie_str += f" (max Gen{pcie.max_link_gen} x{pcie.max_link_width})"
+        kv("PCIe", pcie_str)
+
+    kv("Throttle", metrics.throttle.summary)
+
+    conf_pct = int(bottleneck.confidence * 100)
+    lines.append("")
+    lines.append(f"  Bottleneck: {bottleneck.bottleneck.value} ({conf_pct}% confidence)")
+    lines.append(f"  {bottleneck.detail}")
+
+    if bottleneck.warnings:
+        lines.append("")
+        lines.append("  Warnings:")
+        for w in bottleneck.warnings:
+            lines.append(f"    {w}")
+
+    if patterns:
+        lines.append("")
+        lines.append("  Patterns:")
+        for p in patterns:
+            lines.append(f"    [{p.severity}] {p.detail}")
+
+    if recommendations:
+        lines.append("")
+        lines.append("  Recommendations:")
+        for rec in recommendations:
+            lines.append(f"    [P{rec.priority}] {rec.title}")
+            for action in rec.actions:
+                lines.append(f"      - {action}")
+
+    lines.append("")
+    lines.append("  Processes:")
+    if metrics.processes:
+        for proc in metrics.processes:
+            mem_mb = proc.used_memory // (1024**2)
+            lines.append(f"    PID {proc.pid:<8} {proc.name:<24} {mem_mb} MB")
+    else:
+        lines.append("    (none)")
+
+    if metrics.errors:
+        lines.append("")
+        lines.append("  Errors:")
+        for err in metrics.errors:
+            lines.append(f"    {err}")
+
+    print("\n".join(lines))
