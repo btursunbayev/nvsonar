@@ -42,7 +42,8 @@ def classify(metrics: Metrics) -> BottleneckResult:
     # if critical metrics are unavailable, can't classify
     if gpu_util is None and mem_util is None:
         return BottleneckResult(
-            BottleneckType.UNKNOWN, 0.10,
+            BottleneckType.UNKNOWN,
+            0.10,
             "GPU metrics unavailable, cannot classify workload",
             warnings,
         )
@@ -54,7 +55,8 @@ def classify(metrics: Metrics) -> BottleneckResult:
     # --- idle ---
     if gu < 5 and mu < 5:
         return BottleneckResult(
-            BottleneckType.IDLE, 0.95,
+            BottleneckType.IDLE,
+            0.95,
             "GPU has no active workload",
             warnings,
         )
@@ -65,22 +67,22 @@ def classify(metrics: Metrics) -> BottleneckResult:
         r.name in ("Hardware Thermal Slowdown", "Hardware Slowdown")
         for r in throttle.active_reasons
     )
-    sw_thermal = any(
-        r.name == "Software Thermal Slowdown" for r in throttle.active_reasons
-    )
+    sw_thermal = any(r.name == "Software Thermal Slowdown" for r in throttle.active_reasons)
 
     cd = f"{clock_drop:.0f}" if clock_drop is not None else "N/A"
     temp = metrics.temperature if metrics.temperature is not None else "N/A"
 
     if hw_thermal:
         return BottleneckResult(
-            BottleneckType.THERMAL_THROTTLED, 0.95,
+            BottleneckType.THERMAL_THROTTLED,
+            0.95,
             f"Hardware thermal throttle active at {temp}C, clocks reduced {cd}%",
             warnings,
         )
     if sw_thermal:
         return BottleneckResult(
-            BottleneckType.THERMAL_THROTTLED, 0.85,
+            BottleneckType.THERMAL_THROTTLED,
+            0.85,
             f"Driver thermal throttle at {temp}C, clocks reduced {cd}%",
             warnings,
         )
@@ -89,14 +91,16 @@ def classify(metrics: Metrics) -> BottleneckResult:
     sw_power_cap = any(r.name == "Software Power Cap" for r in throttle.active_reasons)
     if sw_power_cap and power_pct is not None and power_pct > 90:
         return BottleneckResult(
-            BottleneckType.POWER_LIMITED, 0.90,
+            BottleneckType.POWER_LIMITED,
+            0.90,
             f"Power draw at {power_pct:.0f}% of limit, clocks reduced {cd}%",
             warnings,
         )
 
     if power_pct is not None and power_pct > 95:
         return BottleneckResult(
-            BottleneckType.POWER_LIMITED, 0.80,
+            BottleneckType.POWER_LIMITED,
+            0.80,
             f"Power at {power_pct:.0f}% of limit",
             warnings,
         )
@@ -105,7 +109,8 @@ def classify(metrics: Metrics) -> BottleneckResult:
 
     if mem_used_pct is not None and mem_used_pct > 95:
         return BottleneckResult(
-            BottleneckType.MEMORY_CAPACITY_BOUND, 0.90,
+            BottleneckType.MEMORY_CAPACITY_BOUND,
+            0.90,
             f"VRAM {mem_used_pct:.0f}% full, OOM risk",
             warnings,
         )
@@ -113,7 +118,8 @@ def classify(metrics: Metrics) -> BottleneckResult:
     if gu > 85 and mu < 50:
         conf = 0.85 if gu > 95 else 0.75
         return BottleneckResult(
-            BottleneckType.COMPUTE_BOUND, conf,
+            BottleneckType.COMPUTE_BOUND,
+            conf,
             f"GPU {gu}% utilized, memory controller only {mu}%",
             warnings,
         )
@@ -121,14 +127,16 @@ def classify(metrics: Metrics) -> BottleneckResult:
     if mu > 80 and gu < 85:
         conf = 0.85 if mu > 90 else 0.75
         return BottleneckResult(
-            BottleneckType.MEMORY_BANDWIDTH_BOUND, conf,
+            BottleneckType.MEMORY_BANDWIDTH_BOUND,
+            conf,
             f"Memory controller {mu}% busy, GPU at {gu}%",
             warnings,
         )
 
     if gu < 40 and mem_used_pct is not None and mem_used_pct > 50:
         return BottleneckResult(
-            BottleneckType.DATA_STARVED, 0.70,
+            BottleneckType.DATA_STARVED,
+            0.70,
             f"GPU only {gu}% utilized despite {mem_used_pct:.0f}% VRAM used, "
             f"likely CPU or data loading bottleneck",
             warnings,
@@ -136,20 +144,23 @@ def classify(metrics: Metrics) -> BottleneckResult:
 
     if gu > 70 and mu > 60:
         return BottleneckResult(
-            BottleneckType.BALANCED, 0.65,
+            BottleneckType.BALANCED,
+            0.65,
             f"Balanced workload, GPU {gu}%, memory controller {mu}%",
             warnings,
         )
 
     if gu >= 5 or mu >= 5:
         return BottleneckResult(
-            BottleneckType.BALANCED, 0.40,
+            BottleneckType.BALANCED,
+            0.40,
             f"Light workload, GPU {gu}%, memory controller {mu}%",
             warnings,
         )
 
     return BottleneckResult(
-        BottleneckType.UNKNOWN, 0.20,
+        BottleneckType.UNKNOWN,
+        0.20,
         "Unable to classify workload from available metrics",
         warnings,
     )
@@ -182,9 +193,7 @@ def _collect_warnings(metrics: Metrics) -> list[str]:
             f"hardware may need replacement"
         )
     elif metrics.ecc.correctable > 0:
-        warnings.append(
-            f"{metrics.ecc.correctable} correctable ECC errors, monitor for increase"
-        )
+        warnings.append(f"{metrics.ecc.correctable} correctable ECC errors, monitor for increase")
 
     # clock reduction without throttle reason
     # only warn if throttle status is not "no throttling"

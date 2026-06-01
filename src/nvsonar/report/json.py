@@ -2,11 +2,11 @@
 
 import json
 
+from nvsonar.analysis.bottleneck import BottleneckResult
+from nvsonar.analysis.recommendations import Recommendation
+from nvsonar.analysis.temporal import Pattern
 from nvsonar.monitor import Metrics
 from nvsonar.monitor.hardware import GPUInfo
-from nvsonar.analysis.bottleneck import BottleneckResult
-from nvsonar.analysis.temporal import Pattern
-from nvsonar.analysis.recommendations import Recommendation
 
 
 def build_report(
@@ -29,14 +29,32 @@ def build_report(
         "metrics": {
             "gpu_utilization": metrics.gpu_utilization,
             "memory_utilization": metrics.memory_utilization,
-            "memory_used_mb": metrics.memory_used // (1024 ** 2) if metrics.memory_used is not None else None,
-            "memory_total_mb": metrics.memory_total // (1024 ** 2) if metrics.memory_total is not None else None,
-            "memory_used_gb": round(metrics.memory_used / (1024 ** 3), 1) if metrics.memory_used is not None else None,
-            "memory_total_gb": round(metrics.memory_total / (1024 ** 3), 1) if metrics.memory_total is not None else None,
-            "memory_used_pct": round(metrics.memory_used_pct, 1) if metrics.memory_used_pct is not None else None,
+            "memory_used_mb": (
+                metrics.memory_used // (1024**2) if metrics.memory_used is not None else None
+            ),
+            "memory_total_mb": (
+                metrics.memory_total // (1024**2) if metrics.memory_total is not None else None
+            ),
+            "memory_used_gb": (
+                round(metrics.memory_used / (1024**3), 1)
+                if metrics.memory_used is not None
+                else None
+            ),
+            "memory_total_gb": (
+                round(metrics.memory_total / (1024**3), 1)
+                if metrics.memory_total is not None
+                else None
+            ),
+            "memory_used_pct": (
+                round(metrics.memory_used_pct, 1) if metrics.memory_used_pct is not None else None
+            ),
             "gpu_clock_mhz": metrics.gpu_clock,
             "max_gpu_clock_mhz": metrics.max_gpu_clock,
-            "clock_reduction_pct": round(metrics.clock_reduction_pct, 1) if metrics.clock_reduction_pct is not None else None,
+            "clock_reduction_pct": (
+                round(metrics.clock_reduction_pct, 1)
+                if metrics.clock_reduction_pct is not None
+                else None
+            ),
             "temperature_c": metrics.temperature,
             "power_usage_w": metrics.power_usage,
             "power_limit_w": metrics.power_limit,
@@ -94,7 +112,7 @@ def build_report(
             {
                 "pid": p.pid,
                 "name": p.name,
-                "used_memory_mb": p.used_memory // (1024 ** 2),
+                "used_memory_mb": p.used_memory // (1024**2),
             }
             for p in metrics.processes
         ],

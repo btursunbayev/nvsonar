@@ -5,15 +5,9 @@ import time
 from contextlib import contextmanager
 from dataclasses import dataclass
 
-from nvsonar.monitor import (
-    initialize,
-    get_device_count,
-    get_gpu_info,
-    MetricsCollector,
-    Metrics,
-)
-from nvsonar.analysis import classify, TemporalAnalyzer, detect_outliers, recommend
+from nvsonar.analysis import TemporalAnalyzer, classify, detect_outliers, recommend
 from nvsonar.analysis.bottleneck import BottleneckResult
+from nvsonar.monitor import Metrics, MetricsCollector, get_device_count, get_gpu_info, initialize
 
 
 @dataclass
@@ -131,11 +125,13 @@ class Session:
                     metrics = collector.collect()
                     bottleneck = classify(metrics)
                     self._temporals[i].update(metrics)
-                    self._snapshots[i].append(GPUSnapshot(
-                        timestamp=now,
-                        metrics=metrics,
-                        bottleneck=bottleneck,
-                    ))
+                    self._snapshots[i].append(
+                        GPUSnapshot(
+                            timestamp=now,
+                            metrics=metrics,
+                            bottleneck=bottleneck,
+                        )
+                    )
                 except Exception:
                     pass
 
@@ -155,9 +151,7 @@ class Session:
         if len(latest_metrics) > 1:
             outlier_results = detect_outliers(latest_metrics)
             for o in outlier_results:
-                outliers.append(
-                    f"GPU {o.gpu_index} {o.metric}: {o.detail}"
-                )
+                outliers.append(f"GPU {o.gpu_index} {o.metric}: {o.detail}")
 
         for i in self._gpu_indices:
             snaps = self._snapshots.get(i, [])
@@ -211,26 +205,28 @@ class Session:
             recs = recommend(bottleneck=last_bottleneck, patterns=patterns)
             rec_strs = [f"[P{r.priority}] {r.title}" for r in recs if r.priority <= 2]
 
-            summaries.append(GPUSummary(
-                gpu_index=i,
-                gpu_name=self._gpu_names.get(i, f"GPU {i}"),
-                duration_seconds=duration,
-                total_samples=total,
-                idle_pct=(idle_count / total) * 100,
-                throttled_pct=(throttled_count / total) * 100,
-                data_starved_pct=(starved_count / total) * 100,
-                peak_temperature=max(temps),
-                peak_gpu_utilization=max(gpu_utils),
-                peak_memory_used_pct=max(mem_used_pcts),
-                peak_power_usage=max(powers) if powers else None,
-                avg_gpu_utilization=sum(gpu_utils) / total,
-                avg_memory_utilization=sum(mem_utils) / total,
-                avg_temperature=sum(temps) / total,
-                dominant_bottleneck=dominant,
-                dominant_bottleneck_pct=dominant_pct,
-                patterns=pattern_strs,
-                recommendations=rec_strs,
-            ))
+            summaries.append(
+                GPUSummary(
+                    gpu_index=i,
+                    gpu_name=self._gpu_names.get(i, f"GPU {i}"),
+                    duration_seconds=duration,
+                    total_samples=total,
+                    idle_pct=(idle_count / total) * 100,
+                    throttled_pct=(throttled_count / total) * 100,
+                    data_starved_pct=(starved_count / total) * 100,
+                    peak_temperature=max(temps),
+                    peak_gpu_utilization=max(gpu_utils),
+                    peak_memory_used_pct=max(mem_used_pcts),
+                    peak_power_usage=max(powers) if powers else None,
+                    avg_gpu_utilization=sum(gpu_utils) / total,
+                    avg_memory_utilization=sum(mem_utils) / total,
+                    avg_temperature=sum(temps) / total,
+                    dominant_bottleneck=dominant,
+                    dominant_bottleneck_pct=dominant_pct,
+                    patterns=pattern_strs,
+                    recommendations=rec_strs,
+                )
+            )
 
         return SessionResult(
             duration_seconds=duration,
@@ -297,7 +293,9 @@ def print_summary(result: SessionResult):
         print(f"    Data starved:  {s.data_starved_pct:.1f}%")
 
         if s.dominant_bottleneck != "idle":
-            print(f"\n  Dominant bottleneck: {s.dominant_bottleneck} ({s.dominant_bottleneck_pct:.0f}% of session)")
+            print(
+                f"\n  Dominant bottleneck: {s.dominant_bottleneck} ({s.dominant_bottleneck_pct:.0f}% of session)"
+            )
 
         if s.patterns:
             print(f"\n  Patterns detected:")

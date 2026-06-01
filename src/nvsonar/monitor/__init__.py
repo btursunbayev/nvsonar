@@ -1,17 +1,17 @@
 from .hardware import (
-    GPUInfo,
-    PCIeInfo,
     ECCInfo,
+    GPUInfo,
     GPUProcess,
-    initialize,
+    PCIeInfo,
     get_device_count,
     get_gpu_info,
-    list_gpus,
-    get_handle,
     get_gpu_processes,
+    get_handle,
+    initialize,
+    list_gpus,
 )
 from .metrics import Metrics, MetricsCollector
-from .throttle import ThrottleStatus, ThrottleReason, decode_throttle_reasons
+from .throttle import ThrottleReason, ThrottleStatus, decode_throttle_reasons
 
 __all__ = [
     "GPUInfo",
