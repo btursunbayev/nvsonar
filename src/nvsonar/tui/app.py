@@ -12,14 +12,8 @@ from textual.app import App as TextualApp
 from textual.app import ComposeResult
 from textual.widgets import Footer, Header, Static, TabbedContent, TabPane
 
-from nvsonar.monitor import (
-    initialize,
-    get_device_count,
-    get_gpu_info,
-    list_gpus,
-    MetricsCollector,
-)
-from nvsonar.analysis import classify, TemporalAnalyzer, recommend
+from nvsonar.analysis import TemporalAnalyzer, classify, recommend
+from nvsonar.monitor import MetricsCollector, get_device_count, get_gpu_info, initialize, list_gpus
 
 UPDATE_INTERVAL = 0.5
 PEAK_WINDOW = 60.0
@@ -165,17 +159,19 @@ class LiveMetrics(Static):
                 recs = recommend(bottleneck=bottleneck, patterns=patterns)
 
                 # save to history
-                self.history[device_index].append(MetricSnapshot(
-                    timestamp=current_time,
-                    temperature=m.temperature,
-                    power_usage=m.power_usage or 0.0,
-                    gpu_utilization=m.gpu_utilization,
-                    memory_utilization=m.memory_utilization,
-                    memory_used=m.memory_used,
-                    gpu_clock=m.gpu_clock,
-                    memory_clock=m.memory_clock,
-                    bottleneck=bottleneck.bottleneck.value,
-                ))
+                self.history[device_index].append(
+                    MetricSnapshot(
+                        timestamp=current_time,
+                        temperature=m.temperature,
+                        power_usage=m.power_usage or 0.0,
+                        gpu_utilization=m.gpu_utilization,
+                        memory_utilization=m.memory_utilization,
+                        memory_used=m.memory_used,
+                        gpu_clock=m.gpu_clock,
+                        memory_clock=m.memory_clock,
+                        bottleneck=bottleneck.bottleneck.value,
+                    )
+                )
                 self._clean_old_snapshots(device_index, current_time)
 
                 # build sparkline data from history
@@ -230,8 +226,20 @@ class LiveMetrics(Static):
 
                 # temperature
                 if m.temperature is not None:
-                    temp_color = "red" if m.temperature > 85 else "yellow" if m.temperature > 75 else "green" if m.temperature < 60 else ""
-                    temp_str = f"[{temp_color}]{m.temperature}C[/{temp_color}]" if temp_color else f"{m.temperature}C"
+                    temp_color = (
+                        "red"
+                        if m.temperature > 85
+                        else (
+                            "yellow"
+                            if m.temperature > 75
+                            else "green" if m.temperature < 60 else ""
+                        )
+                    )
+                    temp_str = (
+                        f"[{temp_color}]{m.temperature}C[/{temp_color}]"
+                        if temp_color
+                        else f"{m.temperature}C"
+                    )
                     table.add_row("Temperature", temp_str, spark_temp)
                 else:
                     table.add_row("Temperature", "N/A", "")
@@ -396,7 +404,7 @@ class ReportTab(Static):
     """Display diagnostic report card"""
 
     def on_mount(self) -> None:
-        from nvsonar.report.card import _health_score, _grade
+        from nvsonar.report.card import _grade, _health_score
 
         if not initialize():
             self.update("[red]Failed to initialize NVML[/red]")
@@ -427,16 +435,33 @@ class ReportTab(Static):
 
             table.add_row("GPU utilization", f"{metrics.gpu_utilization}%")
             table.add_row("Memory controller", f"{metrics.memory_utilization}%")
-            table.add_row("VRAM", f"{metrics.memory_used // (1024**2)}MB / {metrics.memory_total // (1024**2)}MB ({metrics.memory_used_pct:.0f}%)")
+            table.add_row(
+                "VRAM",
+                f"{metrics.memory_used // (1024**2)}MB / {metrics.memory_total // (1024**2)}MB ({metrics.memory_used_pct:.0f}%)",
+            )
             table.add_row("Clocks", f"{metrics.gpu_clock} / {metrics.max_gpu_clock} MHz")
 
-            temp_color = "red" if metrics.temperature > 85 else "yellow" if metrics.temperature > 75 else "green" if metrics.temperature < 60 else ""
-            temp_str = f"[{temp_color}]{metrics.temperature}C[/{temp_color}]" if temp_color else f"{metrics.temperature}C"
+            temp_color = (
+                "red"
+                if metrics.temperature > 85
+                else (
+                    "yellow"
+                    if metrics.temperature > 75
+                    else "green" if metrics.temperature < 60 else ""
+                )
+            )
+            temp_str = (
+                f"[{temp_color}]{metrics.temperature}C[/{temp_color}]"
+                if temp_color
+                else f"{metrics.temperature}C"
+            )
             table.add_row("Temperature", temp_str)
 
             if metrics.power_usage is not None:
                 if metrics.power_limit is not None:
-                    table.add_row("Power", f"{metrics.power_usage:.0f}W / {metrics.power_limit:.0f}W")
+                    table.add_row(
+                        "Power", f"{metrics.power_usage:.0f}W / {metrics.power_limit:.0f}W"
+                    )
                 else:
                     table.add_row("Power", f"{metrics.power_usage:.0f}W")
 
@@ -450,7 +475,9 @@ class ReportTab(Static):
 
             content.add_row(Text())
             conf_pct = int(bottleneck.confidence * 100)
-            content.add_row(Text(f"  Bottleneck: {bottleneck.bottleneck.value} ({conf_pct}%)", style="bold"))
+            content.add_row(
+                Text(f"  Bottleneck: {bottleneck.bottleneck.value} ({conf_pct}%)", style="bold")
+            )
             content.add_row(Text(f"  {bottleneck.detail}"))
 
             if bottleneck.warnings:
@@ -463,8 +490,12 @@ class ReportTab(Static):
                 content.add_row(Text())
                 content.add_row(Text("  Recommendations:", style="bold"))
                 for rec in recs:
-                    priority_color = "red" if rec.priority == 1 else "yellow" if rec.priority == 2 else "white"
-                    content.add_row(Text(f"    [P{rec.priority}] {rec.title}", style=f"bold {priority_color}"))
+                    priority_color = (
+                        "red" if rec.priority == 1 else "yellow" if rec.priority == 2 else "white"
+                    )
+                    content.add_row(
+                        Text(f"    [P{rec.priority}] {rec.title}", style=f"bold {priority_color}")
+                    )
                     for action in rec.actions:
                         content.add_row(Text(f"      - {action}"))
 
@@ -506,6 +537,7 @@ class BenchmarkTab(Static):
 
         try:
             from nvsonar.benchmark import run_memory
+
             result = run_memory()
             spec_str, score_str = "", ""
             if specs:
@@ -521,6 +553,7 @@ class BenchmarkTab(Static):
 
         try:
             from nvsonar.benchmark import run_compute
+
             result = run_compute()
             spec_str, score_str = "", ""
             if specs:
@@ -534,6 +567,7 @@ class BenchmarkTab(Static):
 
         try:
             from nvsonar.benchmark import run_pcie
+
             result = run_pcie()
             spec_str, score_str = "", ""
             if specs:
@@ -556,7 +590,7 @@ class HistoryTab(Static):
     """Display historical trends"""
 
     def on_mount(self) -> None:
-        from nvsonar.history import load, analyze_trends
+        from nvsonar.history import analyze_trends, load
 
         entries = load()
 
@@ -572,6 +606,7 @@ class HistoryTab(Static):
         panels = []
         for idx, gpu_entries in sorted(gpus.items()):
             import time as _time
+
             name = gpu_entries[0].gpu_name
             total = len(gpu_entries)
 
@@ -586,8 +621,13 @@ class HistoryTab(Static):
             utils = [e.gpu_utilization for e in gpu_entries]
 
             table.add_row("Samples", f"{total} ({first_time} to {last_time})")
-            table.add_row("Temperature", f"{min(temps):.0f}C - {max(temps):.0f}C (avg {sum(temps)/len(temps):.0f}C)")
-            table.add_row("Utilization", f"{min(utils)}% - {max(utils)}% (avg {sum(utils)/len(utils):.0f}%)")
+            table.add_row(
+                "Temperature",
+                f"{min(temps):.0f}C - {max(temps):.0f}C (avg {sum(temps)/len(temps):.0f}C)",
+            )
+            table.add_row(
+                "Utilization", f"{min(utils)}% - {max(utils)}% (avg {sum(utils)/len(utils):.0f}%)"
+            )
 
             ecc_total = sum(e.ecc_correctable + e.ecc_uncorrectable for e in gpu_entries)
             if ecc_total > 0:
@@ -595,7 +635,10 @@ class HistoryTab(Static):
 
             throttled = sum(1 for e in gpu_entries if e.throttled)
             if throttled > 0:
-                table.add_row("Throttled", f"[yellow]{throttled}/{total} ({throttled/total*100:.0f}%)[/yellow]")
+                table.add_row(
+                    "Throttled",
+                    f"[yellow]{throttled}/{total} ({throttled/total*100:.0f}%)[/yellow]",
+                )
 
             content = Table.grid(padding=(0, 0))
             content.add_row(table)
@@ -605,7 +648,12 @@ class HistoryTab(Static):
                 content.add_row(Text())
                 content.add_row(Text("  Trends:", style="bold"))
                 for t in trends:
-                    color = "red" if t.direction == "rising" and t.metric in ("temperature", "ecc_errors", "throttling") else "yellow" if t.direction == "rising" else "green"
+                    color = (
+                        "red"
+                        if t.direction == "rising"
+                        and t.metric in ("temperature", "ecc_errors", "throttling")
+                        else "yellow" if t.direction == "rising" else "green"
+                    )
                     content.add_row(Text(f"    [{t.direction}] {t.detail}", style=color))
 
             header = Text()

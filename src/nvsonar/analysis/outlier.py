@@ -81,7 +81,6 @@ def detect_outliers(
         if std < 0.001:
             continue  # all GPUs identical
 
-
         for idx, value in values.items():
             z = (value - mean) / std
 
@@ -106,36 +105,39 @@ def detect_outliers(
                     severity = "critical"
 
             detail = template.format(value=value, mean=mean)
-            outliers.append(Outlier(
-                gpu_index=idx,
-                metric=metric_name,
-                value=value,
-                group_mean=mean,
-                group_std=std,
-                z_score=z,
-                detail=detail,
-                severity=severity,
-            ))
+            outliers.append(
+                Outlier(
+                    gpu_index=idx,
+                    metric=metric_name,
+                    value=value,
+                    group_mean=mean,
+                    group_std=std,
+                    z_score=z,
+                    detail=detail,
+                    severity=severity,
+                )
+            )
 
     # ECC outliers: any uncorrectable when peers have none
     for idx, m in gpu_metrics.items():
         if m.ecc.uncorrectable > 0:
             others_clean = all(
-                gpu_metrics[j].ecc.uncorrectable == 0
-                for j in gpu_metrics if j != idx
+                gpu_metrics[j].ecc.uncorrectable == 0 for j in gpu_metrics if j != idx
             )
             if others_clean:
-                outliers.append(Outlier(
-                    gpu_index=idx,
-                    metric="ecc_errors",
-                    value=float(m.ecc.uncorrectable),
-                    group_mean=0.0,
-                    group_std=0.0,
-                    z_score=99.0,
-                    detail=f"{m.ecc.uncorrectable} uncorrectable ECC errors "
-                           f"while all other GPUs have 0",
-                    severity="critical",
-                ))
+                outliers.append(
+                    Outlier(
+                        gpu_index=idx,
+                        metric="ecc_errors",
+                        value=float(m.ecc.uncorrectable),
+                        group_mean=0.0,
+                        group_std=0.0,
+                        z_score=99.0,
+                        detail=f"{m.ecc.uncorrectable} uncorrectable ECC errors "
+                        f"while all other GPUs have 0",
+                        severity="critical",
+                    )
+                )
 
     severity_order = {"critical": 0, "warning": 1, "info": 2}
     outliers.sort(key=lambda o: severity_order.get(o.severity, 99))

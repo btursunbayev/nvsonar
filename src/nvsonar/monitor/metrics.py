@@ -4,8 +4,16 @@ from dataclasses import dataclass, field
 
 import pynvml as nvml
 
-from .hardware import get_handle, get_pcie_info, get_ecc_info, get_gpu_processes, PCIeInfo, ECCInfo, GPUProcess
-from .throttle import decode_throttle_reasons, ThrottleStatus
+from .hardware import (
+    ECCInfo,
+    GPUProcess,
+    PCIeInfo,
+    get_ecc_info,
+    get_gpu_processes,
+    get_handle,
+    get_pcie_info,
+)
+from .throttle import ThrottleStatus, decode_throttle_reasons
 
 
 @dataclass

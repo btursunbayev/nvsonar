@@ -139,18 +139,15 @@ class TemporalAnalyzer:
         std = math.sqrt(variance)
         cv = std / mean
 
-
         if cv < 0.10:
             return None
 
         # confirm with zero-crossing rate
         midpoint = (min(values) + max(values)) / 2
         crossings = sum(
-            1 for i in range(1, len(values))
-            if (values[i] > midpoint) != (values[i - 1] > midpoint)
+            1 for i in range(1, len(values)) if (values[i] > midpoint) != (values[i - 1] > midpoint)
         )
         crossing_rate = crossings / len(values)
-
 
         if crossing_rate < 0.2:
             return None
@@ -158,7 +155,8 @@ class TemporalAnalyzer:
         spread = max(values) - min(values)
         severity = "warning" if cv < 0.20 else "critical"
         return Pattern(
-            "clock_oscillation", severity,
+            "clock_oscillation",
+            severity,
             f"GPU clock oscillating between {min(values)}-{max(values)} MHz "
             f"(spread {spread} MHz, {crossings} transitions in last "
             f"{len(values)} samples)",
@@ -184,7 +182,6 @@ class TemporalAnalyzer:
 
         slope = (n * sum_xy - sum_x * sum_y) / denom
 
-
         # slope is C per sample, at 1Hz slope of 0.05 = 3C/min
         if slope < 0.05:
             return None
@@ -200,9 +197,9 @@ class TemporalAnalyzer:
             severity = "info"
 
         return Pattern(
-            "temperature_rising", severity,
-            f"Temperature rising at ~{rate_per_min:.1f}C/min "
-            f"(currently {current:.0f}C)",
+            "temperature_rising",
+            severity,
+            f"Temperature rising at ~{rate_per_min:.1f}C/min " f"(currently {current:.0f}C)",
         )
 
     def _detect_utilization_dips(self) -> Pattern | None:
@@ -220,12 +217,12 @@ class TemporalAnalyzer:
         dips = sum(1 for v in values if v < dip_threshold)
         dip_ratio = dips / len(values)
 
-
         if dip_ratio < 0.10:
             return None
 
         return Pattern(
-            "utilization_dips", "warning",
+            "utilization_dips",
+            "warning",
             f"GPU utilization dropping to <{dip_threshold:.0f}% in "
             f"{dips}/{len(values)} samples (avg {mean:.0f}%), "
             f"likely data loading or CPU bottleneck",
@@ -243,25 +240,22 @@ class TemporalAnalyzer:
         end_avg = sum(values[-5:]) / 5
         growth = end_avg - start_avg
 
-
         if growth < 5.0:
             return None
 
         # confirm it's a trend not a step
         chunk = max(1, len(values) // 5)
         chunks = [
-            sum(values[i : i + chunk]) / chunk
-            for i in range(0, len(values) - chunk + 1, chunk)
+            sum(values[i : i + chunk]) / chunk for i in range(0, len(values) - chunk + 1, chunk)
         ]
-        increases = sum(
-            1 for i in range(1, len(chunks)) if chunks[i] > chunks[i - 1]
-        )
+        increases = sum(1 for i in range(1, len(chunks)) if chunks[i] > chunks[i - 1])
 
         if increases < len(chunks) - 2:
             return None  # not consistently increasing
 
         return Pattern(
-            "memory_creep", "warning",
+            "memory_creep",
+            "warning",
             f"VRAM usage grew {growth:.1f}% over last {len(values)} samples "
             f"({start_avg:.1f}% to {end_avg:.1f}%), possible memory leak",
         )
@@ -280,10 +274,7 @@ class TemporalAnalyzer:
             return None
 
         # count transitions within the window
-        transitions = sum(
-            1 for i in range(1, total)
-            if values[i] != values[i - 1]
-        )
+        transitions = sum(1 for i in range(1, total) if values[i] != values[i - 1])
 
         if transitions < 3:
             return None
@@ -292,7 +283,8 @@ class TemporalAnalyzer:
         severity = "critical" if transitions > 10 else "warning"
 
         return Pattern(
-            "throttle_cycling", severity,
+            "throttle_cycling",
+            severity,
             f"Throttle triggered {transitions} times in last {total} samples "
             f"(throttled {throttled_pct:.0f}% of the time)",
         )

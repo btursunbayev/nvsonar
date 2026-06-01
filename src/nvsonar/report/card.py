@@ -5,11 +5,11 @@ from rich.panel import Panel
 from rich.table import Table
 from rich.text import Text
 
+from nvsonar.analysis.bottleneck import BottleneckResult, BottleneckType
+from nvsonar.analysis.recommendations import Recommendation
+from nvsonar.analysis.temporal import Pattern
 from nvsonar.monitor import Metrics
 from nvsonar.monitor.hardware import GPUInfo
-from nvsonar.analysis.bottleneck import BottleneckResult, BottleneckType
-from nvsonar.analysis.temporal import Pattern
-from nvsonar.analysis.recommendations import Recommendation
 
 
 def _health_score(metrics: Metrics, bottleneck: BottleneckResult) -> int:
@@ -149,10 +149,11 @@ def print_report(
 
     mem_pct = metrics.memory_used_pct
     if metrics.memory_total is not None and metrics.memory_total > 0:
-        mem_color = "red" if mem_pct and mem_pct > 90 else "yellow" if mem_pct and mem_pct > 75 else ""
+        mem_color = (
+            "red" if mem_pct and mem_pct > 90 else "yellow" if mem_pct and mem_pct > 75 else ""
+        )
         vram_str = (
-            f"{metrics.memory_used // (1024**2)}MB / "
-            f"{metrics.memory_total // (1024**2)}MB"
+            f"{metrics.memory_used // (1024**2)}MB / " f"{metrics.memory_total // (1024**2)}MB"
         )
         if mem_pct is not None:
             vram_str += f" ({mem_pct:.0f}%)"
@@ -187,7 +188,9 @@ def print_report(
     if metrics.power_usage is not None:
         if metrics.power_limit is not None:
             pwr_pct = metrics.power_used_pct
-            pwr_color = "red" if pwr_pct and pwr_pct > 95 else "yellow" if pwr_pct and pwr_pct > 85 else ""
+            pwr_color = (
+                "red" if pwr_pct and pwr_pct > 95 else "yellow" if pwr_pct and pwr_pct > 85 else ""
+            )
             pwr_str = f"{metrics.power_usage:.0f}W / {metrics.power_limit:.0f}W"
             if pwr_pct:
                 pwr_str += f" ({pwr_pct:.0f}%)"
@@ -242,8 +245,12 @@ def print_report(
         content.add_row(Text())
         content.add_row(Text("  Recommendations:", style="bold"))
         for rec in recommendations:
-            priority_color = "red" if rec.priority == 1 else "yellow" if rec.priority == 2 else "white"
-            content.add_row(Text(f"    [P{rec.priority}] {rec.title}", style=f"bold {priority_color}"))
+            priority_color = (
+                "red" if rec.priority == 1 else "yellow" if rec.priority == 2 else "white"
+            )
+            content.add_row(
+                Text(f"    [P{rec.priority}] {rec.title}", style=f"bold {priority_color}")
+            )
             for action in rec.actions:
                 content.add_row(Text(f"      - {action}"))
 
@@ -252,7 +259,7 @@ def print_report(
     content.add_row(Text("  Processes:", style="bold"))
     if metrics.processes:
         for proc in metrics.processes:
-            mem_mb = proc.used_memory // (1024 ** 2)
+            mem_mb = proc.used_memory // (1024**2)
             content.add_row(Text(f"    PID {proc.pid:<8} {proc.name:<24} {mem_mb} MB"))
     else:
         content.add_row(Text("    (none)"))

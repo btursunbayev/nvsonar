@@ -29,7 +29,6 @@ SPECS = {
     "2080": GPUSpecs(448, 10.1, 3, 15.75),
     "2080 super": GPUSpecs(496, 11.2, 3, 15.75),
     "2080 ti": GPUSpecs(616, 13.4, 3, 15.75),
-
     # Ampere consumer
     "3060": GPUSpecs(360, 12.7, 4, 31.5),
     "3060 ti": GPUSpecs(448, 16.2, 4, 31.5),
@@ -39,7 +38,6 @@ SPECS = {
     "3080 ti": GPUSpecs(912, 34.1, 4, 31.5),
     "3090": GPUSpecs(936, 35.6, 4, 31.5),
     "3090 ti": GPUSpecs(1008, 40.0, 4, 31.5),
-
     # Ada Lovelace consumer
     "4060": GPUSpecs(272, 15.1, 4, 31.5),
     "4060 ti": GPUSpecs(288, 22.1, 4, 31.5),
@@ -50,7 +48,6 @@ SPECS = {
     "4080": GPUSpecs(717, 48.7, 4, 31.5),
     "4080 super": GPUSpecs(736, 52.0, 4, 31.5),
     "4090": GPUSpecs(1008, 82.6, 4, 31.5),
-
     # datacenter
     "a100": GPUSpecs(2039, 19.5, 4, 31.5),
     "a100 80gb": GPUSpecs(2039, 19.5, 4, 31.5),

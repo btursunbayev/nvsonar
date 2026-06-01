@@ -2,8 +2,9 @@
 
 import sys
 
-from nvsonar import __version__
 import typer
+
+from nvsonar import __version__
 
 app = typer.Typer(add_completion=False, invoke_without_command=True)
 
@@ -11,7 +12,7 @@ app = typer.Typer(add_completion=False, invoke_without_command=True)
 @app.callback()
 def main(
     ctx: typer.Context,
-    version: bool = typer.Option(False, "--version", help="Print version and exit")
+    version: bool = typer.Option(False, "--version", help="Print version and exit"),
 ):
     """GPU diagnostic tool — run without arguments for TUI"""
     if version:
@@ -21,6 +22,7 @@ def main(
         return
 
     from nvsonar.monitor import initialize
+
     if not initialize():
         typer.echo("Error: failed to initialize NVML", err=True)
         typer.echo("Make sure you have an NVIDIA GPU with drivers installed", err=True)
@@ -51,9 +53,9 @@ def report(
         typer.echo("Error: --json and --csv are mutually exclusive", err=True)
         sys.exit(1)
 
-    from nvsonar.monitor import initialize, get_device_count, get_gpu_info, MetricsCollector
     from nvsonar.analysis import classify, detect_outliers, recommend
-    from nvsonar.report import print_report, to_json, report_to_csv_row, to_csv
+    from nvsonar.monitor import MetricsCollector, get_device_count, get_gpu_info, initialize
+    from nvsonar.report import print_report, report_to_csv_row, to_csv, to_json
 
     if not initialize():
         typer.echo("Error: failed to initialize NVML, no NVIDIA GPU found", err=True)
@@ -102,6 +104,7 @@ def report(
         # save to history
         try:
             from nvsonar.history import save_from_metrics
+
             save_from_metrics(i, info.name, metrics, bottleneck)
         except Exception:
             pass
@@ -142,12 +145,14 @@ def benchmark(
 ):
     """Run GPU performance benchmarks"""
     import shutil
+
     from rich.console import Console
     from rich.panel import Panel
     from rich.table import Table
     from rich.text import Text
-    from nvsonar.monitor import initialize, get_gpu_info
+
     from nvsonar.baselines.specs import find_specs
+    from nvsonar.monitor import get_gpu_info, initialize
 
     console = Console()
 
@@ -178,6 +183,7 @@ def benchmark(
     if memory or run_all:
         try:
             from nvsonar.benchmark import run_memory
+
             result = run_memory()
 
             spec_str = ""
@@ -197,6 +203,7 @@ def benchmark(
     if compute or run_all:
         try:
             from nvsonar.benchmark import run_compute
+
             result = run_compute()
 
             spec_str = ""
@@ -214,6 +221,7 @@ def benchmark(
     if pcie or run_all:
         try:
             from nvsonar.benchmark import run_pcie
+
             result = run_pcie()
 
             spec_str = ""

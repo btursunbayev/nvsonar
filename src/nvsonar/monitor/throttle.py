@@ -4,7 +4,6 @@ from dataclasses import dataclass
 
 import pynvml as nvml
 
-
 # Maps NVML throttle bitmask values to human-readable info
 REASONS = {
     nvml.nvmlClocksThrottleReasonGpuIdle: {

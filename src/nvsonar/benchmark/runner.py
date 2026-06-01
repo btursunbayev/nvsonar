@@ -2,8 +2,8 @@
 
 import ctypes
 import os
-import subprocess
 import shutil
+import subprocess
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -78,8 +78,10 @@ def _compile(kernel_name: str) -> Path:
     cmd = [
         nvcc,
         "--shared",
-        "--compiler-options", "-fPIC",
-        "-o", str(so_path),
+        "--compiler-options",
+        "-fPIC",
+        "-o",
+        str(so_path),
         str(cu_path),
     ]
 
