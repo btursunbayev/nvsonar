@@ -1,7 +1,10 @@
-.PHONY: install test lint format build clean
+.PHONY: install hooks test lint format build clean
 
 install:
 	pip install -e ".[dev]"
+
+hooks:
+	pre-commit install
 
 test:
 	pytest tests/ -v --tb=short
