@@ -1,4 +1,4 @@
-.PHONY: install hooks test lint format build clean
+.PHONY: install hooks test lint typecheck format build clean
 
 install:
 	pip install -e ".[dev]"
@@ -15,6 +15,8 @@ test-cov:
 lint:
 	black --check src/ tests/
 	isort --check-only src/ tests/
+
+typecheck:
 	mypy src/
 
 format:
