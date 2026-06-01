@@ -33,13 +33,15 @@ pip install nvsonar
 ```
 
 ```bash
-nvsonar                  # interactive TUI
-nvsonar report           # one-shot diagnostic
-nvsonar report --json    # structured output for scripts/LLMs
-nvsonar report --csv     # CSV output for spreadsheets
-nvsonar report --gpu 0   # specific GPU
-nvsonar benchmark        # GPU performance benchmarks
-nvsonar history          # health trends over time
+nvsonar                       # interactive TUI
+nvsonar report                # one-shot diagnostic
+nvsonar report --plain        # plain text without colors
+nvsonar report --json         # structured output for scripts/LLMs
+nvsonar report --csv          # CSV output for spreadsheets
+nvsonar report --gpu 0        # single GPU
+nvsonar report --gpu 0,1,2    # subset of GPUs
+nvsonar benchmark             # GPU performance benchmarks
+nvsonar history               # health trends over time
 ```
 
 ## Documentation
@@ -47,6 +49,12 @@ nvsonar history          # health trends over time
 - [Architecture](docs/ARCHITECTURE.md)
 - [Contributing](CONTRIBUTING.md)
 - [Changelog](CHANGELOG.md)
+
+## Tested on
+
+- T4 (Turing)
+- A30 (Ampere)
+- GB10 Spark (Grace + Blackwell)
 
 ## License
 
