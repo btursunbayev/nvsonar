@@ -1,5 +1,20 @@
 # Changelog
 
+## [2.3.0] - 2026-06-01
+
+### Added
+- Plain text output mode for terminals without color support
+- Multi-GPU selection in report (single index, comma-separated list, or all)
+- Unit tests covering the bottleneck, temporal, outlier, and recommendation analysis
+
+### Changed
+- Project marked as Production/Stable on PyPI
+- Lint and test now run on every push and pull request
+
+### Fixed
+- Clock reduction warning no longer fires when the GPU is intentionally idle
+
+
 ## [2.2.0] - 2026-03-31
 
 ### Changed

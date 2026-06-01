@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "nvsonar"
-version = "2.2.0"
+version = "2.3.0"
 description = "Active GPU diagnostic tool that identifies performance bottlenecks"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -15,7 +15,7 @@ authors = [
 ]
 keywords = ["gpu", "cuda", "nvidia", "monitoring", "diagnostics", "performance"]
 classifiers = [
-    "Development Status :: 4 - Beta",
+    "Development Status :: 5 - Production/Stable",
     "Environment :: Console",
     "Intended Audience :: Developers",
     "Intended Audience :: Science/Research",
