@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "nvsonar"
-version = "2.3.0"
+version = "2.4.0"
 description = "Active GPU diagnostic tool that identifies performance bottlenecks"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -34,6 +34,7 @@ dependencies = [
     "typer>=0.9.0",
     "rich>=13.0.0",
     "textual>=0.47.0",
+    "prometheus_client>=0.20.0",
 ]
 
 [project.optional-dependencies]

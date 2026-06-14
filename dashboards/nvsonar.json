@@ -1,0 +1,330 @@
+{
+  "uid": "nvsonar",
+  "title": "NVSonar — GPU bottleneck analysis",
+  "tags": ["gpu", "nvidia", "nvsonar"],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "10s",
+  "time": {"from": "now-1h", "to": "now"},
+  "templating": {
+    "list": [
+      {
+        "name": "DS_PROMETHEUS",
+        "type": "datasource",
+        "query": "prometheus",
+        "current": {}
+      },
+      {
+        "name": "gpu",
+        "type": "query",
+        "datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"},
+        "query": {"query": "label_values(nvsonar_gpu_health_score, gpu)", "refId": "StandardVariableQuery"},
+        "refresh": 2,
+        "includeAll": true,
+        "multi": true,
+        "current": {"selected": true, "text": "All", "value": "$__all"}
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1,
+      "type": "timeseries",
+      "title": "GPU Health Score",
+      "description": "0-100 composite score across thermal, clocks, ECC, power, memory, PCIe.",
+      "datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"},
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0},
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "nvsonar_gpu_health_score{gpu=~\"$gpu\"}",
+          "legendFormat": "{{name}} (gpu {{gpu}})"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "min": 0,
+          "max": 100,
+          "unit": "short",
+          "color": {"mode": "palette-classic"},
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"color": "red", "value": null},
+              {"color": "yellow", "value": 50},
+              {"color": "green", "value": 75}
+            ]
+          },
+          "custom": {"drawStyle": "line", "lineWidth": 2, "fillOpacity": 10}
+        }
+      },
+      "options": {"legend": {"displayMode": "table", "placement": "bottom"}}
+    },
+    {
+      "id": 2,
+      "type": "timeseries",
+      "title": "Bottleneck distribution",
+      "description": "Active bottleneck classification per GPU over time.",
+      "datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"},
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0},
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (type) (nvsonar_gpu_bottleneck{gpu=~\"$gpu\"})",
+          "legendFormat": "{{type}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "min": 0,
+          "unit": "short",
+          "color": {"mode": "palette-classic"},
+          "custom": {"drawStyle": "line", "lineWidth": 1, "fillOpacity": 70, "stacking": {"mode": "normal"}}
+        }
+      },
+      "options": {"legend": {"displayMode": "table", "placement": "bottom"}}
+    },
+    {
+      "id": 3,
+      "type": "timeseries",
+      "title": "Temperature",
+      "datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"},
+      "gridPos": {"h": 8, "w": 8, "x": 0, "y": 8},
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "nvsonar_gpu_temp_celsius{gpu=~\"$gpu\"}",
+          "legendFormat": "{{name}} (gpu {{gpu}})"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "celsius",
+          "color": {"mode": "palette-classic"},
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"color": "green", "value": null},
+              {"color": "yellow", "value": 75},
+              {"color": "orange", "value": 85},
+              {"color": "red", "value": 95}
+            ]
+          },
+          "custom": {"drawStyle": "line", "lineWidth": 2, "fillOpacity": 10, "thresholdsStyle": {"mode": "line"}}
+        }
+      },
+      "options": {"legend": {"displayMode": "list", "placement": "bottom"}}
+    },
+    {
+      "id": 4,
+      "type": "timeseries",
+      "title": "Power draw vs limit",
+      "datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"},
+      "gridPos": {"h": 8, "w": 8, "x": 8, "y": 8},
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "nvsonar_gpu_power_watts{gpu=~\"$gpu\"}",
+          "legendFormat": "draw — {{name}} (gpu {{gpu}})"
+        },
+        {
+          "refId": "B",
+          "expr": "nvsonar_gpu_power_limit_watts{gpu=~\"$gpu\"}",
+          "legendFormat": "limit — {{name}} (gpu {{gpu}})"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "watt",
+          "color": {"mode": "palette-classic"},
+          "custom": {"drawStyle": "line", "lineWidth": 2, "fillOpacity": 0}
+        }
+      },
+      "options": {"legend": {"displayMode": "list", "placement": "bottom"}}
+    },
+    {
+      "id": 5,
+      "type": "timeseries",
+      "title": "Compute utilization",
+      "datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"},
+      "gridPos": {"h": 8, "w": 8, "x": 16, "y": 8},
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "nvsonar_gpu_utilization_ratio{gpu=~\"$gpu\"}",
+          "legendFormat": "SM — {{name}} (gpu {{gpu}})"
+        },
+        {
+          "refId": "B",
+          "expr": "nvsonar_gpu_memory_controller_ratio{gpu=~\"$gpu\"}",
+          "legendFormat": "MEM ctl — {{name}} (gpu {{gpu}})"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "min": 0,
+          "max": 1,
+          "unit": "percentunit",
+          "color": {"mode": "palette-classic"},
+          "custom": {"drawStyle": "line", "lineWidth": 2, "fillOpacity": 10}
+        }
+      },
+      "options": {"legend": {"displayMode": "list", "placement": "bottom"}}
+    },
+    {
+      "id": 6,
+      "type": "timeseries",
+      "title": "VRAM usage",
+      "datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"},
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 16},
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "nvsonar_gpu_memory_used_bytes{gpu=~\"$gpu\"} / nvsonar_gpu_memory_total_bytes{gpu=~\"$gpu\"}",
+          "legendFormat": "{{name}} (gpu {{gpu}})"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "min": 0,
+          "max": 1,
+          "unit": "percentunit",
+          "color": {"mode": "palette-classic"},
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"color": "green", "value": null},
+              {"color": "yellow", "value": 0.8},
+              {"color": "red", "value": 0.95}
+            ]
+          },
+          "custom": {"drawStyle": "line", "lineWidth": 2, "fillOpacity": 10}
+        }
+      },
+      "options": {"legend": {"displayMode": "list", "placement": "bottom"}}
+    },
+    {
+      "id": 7,
+      "type": "table",
+      "title": "Active throttle reasons",
+      "datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"},
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 16},
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "nvsonar_gpu_throttle_active{gpu=~\"$gpu\"}",
+          "format": "table",
+          "instant": true
+        }
+      ],
+      "transformations": [
+        {"id": "organize", "options": {"excludeByName": {"Time": true, "Value": true, "__name__": true, "instance": true, "job": true}}}
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {"align": "auto"}
+        },
+        "overrides": [
+          {
+            "matcher": {"id": "byName", "options": "severity"},
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": {"type": "color-text"}
+              },
+              {
+                "id": "mappings",
+                "value": [
+                  {"type": "value", "options": {"info": {"color": "blue"}, "warning": {"color": "yellow"}, "critical": {"color": "red"}}}
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "options": {"showHeader": true}
+    },
+    {
+      "id": 8,
+      "type": "timeseries",
+      "title": "ECC errors (per second)",
+      "description": "Rate of ECC errors. Sustained non-zero values indicate failing hardware.",
+      "datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"},
+      "gridPos": {"h": 6, "w": 12, "x": 0, "y": 24},
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "rate(nvsonar_gpu_ecc_errors_total{gpu=~\"$gpu\"}[5m])",
+          "legendFormat": "{{name}} (gpu {{gpu}}, {{severity}})"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "min": 0,
+          "softMax": 1,
+          "unit": "short",
+          "color": {"mode": "palette-classic"},
+          "custom": {"drawStyle": "line", "lineWidth": 2, "fillOpacity": 10}
+        }
+      },
+      "options": {"legend": {"displayMode": "list", "placement": "bottom"}}
+    },
+    {
+      "id": 9,
+      "type": "stat",
+      "title": "Exporter scrape errors",
+      "description": "Background collection errors since exporter startup.",
+      "datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"},
+      "gridPos": {"h": 6, "w": 6, "x": 12, "y": 24},
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "nvsonar_exporter_scrape_errors_total"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {"mode": "thresholds"},
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"color": "green", "value": null},
+              {"color": "red", "value": 1}
+            ]
+          }
+        }
+      },
+      "options": {"colorMode": "background", "graphMode": "none"}
+    },
+    {
+      "id": 10,
+      "type": "stat",
+      "title": "Last scrape duration",
+      "datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"},
+      "gridPos": {"h": 6, "w": 6, "x": 18, "y": 24},
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "nvsonar_exporter_scrape_duration_seconds"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "color": {"mode": "thresholds"},
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"color": "green", "value": null},
+              {"color": "yellow", "value": 1},
+              {"color": "red", "value": 5}
+            ]
+          }
+        }
+      },
+      "options": {"colorMode": "background", "graphMode": "none"}
+    }
+  ]
+}

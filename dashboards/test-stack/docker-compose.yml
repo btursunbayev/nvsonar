@@ -1,0 +1,20 @@
+services:
+  prometheus:
+    image: prom/prometheus:latest
+    network_mode: host
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:10.4.5
+    network_mode: host
+    environment:
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
+      - GF_AUTH_DISABLE_LOGIN_FORM=true
+      - GF_PLUGINS_PREINSTALL_DISABLED=true
+      - GF_INSTALL_PLUGINS=
+    volumes:
+      - ./grafana-provisioning:/etc/grafana/provisioning:ro
+    restart: unless-stopped
