@@ -1,5 +1,16 @@
 # Changelog
 
+## [2.4.0] - 2026-06-05
+
+### Added
+- Prometheus exporter (`nvsonar exporter`) exposing GPU metrics, bottleneck classification, and health score
+- Ready-made Grafana dashboard at `dashboards/nvsonar.json` covering bottleneck distribution, throttle reasons, and exporter self-monitoring
+- Local test stack (docker-compose) for verifying the dashboard against a running exporter
+
+### Changed
+- Health score computation extracted to a shared analysis module for reuse across report and exporter
+
+
 ## [2.3.0] - 2026-06-01
 
 ### Added

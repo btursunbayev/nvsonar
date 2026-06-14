@@ -158,6 +158,44 @@ def history(
 
 
 @app.command()
+def exporter(
+    port: int = typer.Option(9100, "--port", help="HTTP port to serve metrics on"),
+    gpu: str = typer.Option("", "--gpu", help="GPU index or comma-separated list (default: all)"),
+    interval: float = typer.Option(
+        2.0, "--interval", help="Background collection interval in seconds"
+    ),
+):
+    """Run a Prometheus metrics exporter"""
+    import time
+
+    from nvsonar.exporter import start_server
+    from nvsonar.monitor import get_device_count, initialize
+
+    if not initialize():
+        typer.echo("Error: failed to initialize NVML, no NVIDIA GPU found", err=True)
+        sys.exit(1)
+
+    device_count = get_device_count()
+    if device_count == 0:
+        typer.echo("Error: no GPUs detected", err=True)
+        sys.exit(1)
+
+    indices = _parse_gpu_selection(gpu, device_count)
+    plural = "s" if len(indices) != 1 else ""
+    typer.echo(
+        f"nvsonar exporter on http://0.0.0.0:{port}/metrics "
+        f"({len(indices)} GPU{plural}, interval {interval}s)"
+    )
+
+    cache = start_server(port=port, gpu_indices=indices, interval_s=interval)
+    try:
+        while True:
+            time.sleep(3600)
+    except KeyboardInterrupt:
+        cache.stop()
+
+
+@app.command()
 def benchmark(
     memory: bool = typer.Option(False, "--memory", help="Run memory bandwidth only"),
     compute: bool = typer.Option(False, "--compute", help="Run compute throughput only"),
