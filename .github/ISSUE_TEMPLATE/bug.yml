@@ -1,0 +1,57 @@
+name: Bug report
+description: Report a bug in NVSonar
+labels: [bug]
+body:
+  - type: input
+    id: version
+    attributes:
+      label: NVSonar version
+      description: Output of `nvsonar --version`
+      placeholder: nvsonar 2.4.0
+    validations:
+      required: true
+
+  - type: input
+    id: gpu
+    attributes:
+      label: GPU model
+      description: NVIDIA GPU you ran nvsonar against
+      placeholder: NVIDIA A30 / GeForce GTX 1660 Ti / GB10 Spark / ...
+    validations:
+      required: true
+
+  - type: input
+    id: driver
+    attributes:
+      label: NVIDIA driver version
+      description: Output of `nvidia-smi --query-gpu=driver_version --format=csv,noheader`
+      placeholder: 535.183.01
+
+  - type: textarea
+    id: behavior
+    attributes:
+      label: What happened
+      description: What did you run and what did nvsonar do?
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected instead
+    validations:
+      required: true
+
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Run `nvsonar report`
+        2. ...
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant output, logs, or stack traces
+      render: shell
