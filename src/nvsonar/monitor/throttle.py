@@ -118,9 +118,7 @@ def decode_throttle_reasons(handle) -> ThrottleStatus:
     """Read and decode current clock throttle reasons"""
     try:
         bitmask = nvml.nvmlDeviceGetCurrentClocksThrottleReasons(handle)
-        # print(f"throttle bitmask: {hex(bitmask)}")
     except nvml.NVMLError:
-        # print("throttle: failed to read bitmask")
         return ThrottleStatus(raw_bitmask=0, active_reasons=[])
 
     active = []
@@ -134,6 +132,5 @@ def decode_throttle_reasons(handle) -> ThrottleStatus:
                 action=info["action"],
             )
             active.append(reason)
-            # print(f"  [{reason.severity}] {reason.name}")
 
     return ThrottleStatus(raw_bitmask=bitmask, active_reasons=active)

@@ -199,7 +199,7 @@ class TemporalAnalyzer:
         return Pattern(
             "temperature_rising",
             severity,
-            f"Temperature rising at ~{rate_per_min:.1f}C/min " f"(currently {current:.0f}C)",
+            f"Temperature rising at ~{rate_per_min:.1f}C/min (currently {current:.0f}C)",
         )
 
     def _detect_utilization_dips(self) -> Pattern | None:

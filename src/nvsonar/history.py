@@ -214,7 +214,7 @@ def analyze_trends(entries: list[HistoryEntry]) -> list[Trend]:
             Trend(
                 "utilization",
                 "rising",
-                f"GPU usage increasing " f"({util_first:.0f}% -> {util_second:.0f}% avg)",
+                f"GPU usage increasing ({util_first:.0f}% -> {util_second:.0f}% avg)",
             )
         )
 
@@ -259,10 +259,10 @@ def print_history(gpu_index: int | None = None, days: int = 7):
         table.add_row("Samples", f"{total} ({first_time} to {last_time})")
         table.add_row(
             "Temperature",
-            f"{min(temps):.0f}C - {max(temps):.0f}C (avg {sum(temps)/len(temps):.0f}C)",
+            f"{min(temps):.0f}C - {max(temps):.0f}C (avg {sum(temps) / len(temps):.0f}C)",
         )
         table.add_row(
-            "Utilization", f"{min(utils)}% - {max(utils)}% (avg {sum(utils)/len(utils):.0f}%)"
+            "Utilization", f"{min(utils)}% - {max(utils)}% (avg {sum(utils) / len(utils):.0f}%)"
         )
 
         ecc_total = sum(e.ecc_correctable + e.ecc_uncorrectable for e in gpu_entries)
@@ -272,7 +272,8 @@ def print_history(gpu_index: int | None = None, days: int = 7):
         throttled = sum(1 for e in gpu_entries if e.throttled)
         if throttled > 0:
             table.add_row(
-                "Throttled", f"[yellow]{throttled}/{total} ({throttled/total*100:.0f}%)[/yellow]"
+                "Throttled",
+                f"[yellow]{throttled}/{total} ({throttled / total * 100:.0f}%)[/yellow]",
             )
 
         content = Table.grid(padding=(0, 0))
@@ -288,7 +289,9 @@ def print_history(gpu_index: int | None = None, days: int = 7):
                     "red"
                     if t.direction == "rising"
                     and t.metric in ("temperature", "ecc_errors", "throttling")
-                    else "yellow" if t.direction == "rising" else "green"
+                    else "yellow"
+                    if t.direction == "rising"
+                    else "green"
                 )
                 content.add_row(Text(f"    [{t.direction}] {t.detail}", style=color))
 

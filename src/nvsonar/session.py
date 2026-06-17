@@ -287,23 +287,24 @@ def print_summary(result: SessionResult):
         if s.peak_power_usage is not None:
             print(f"  Peak power:             {s.peak_power_usage:.0f}W")
 
-        print(f"\n  Time distribution:")
+        print("\n  Time distribution:")
         print(f"    Idle:          {s.idle_pct:.1f}%")
         print(f"    Throttled:     {s.throttled_pct:.1f}%")
         print(f"    Data starved:  {s.data_starved_pct:.1f}%")
 
         if s.dominant_bottleneck != "idle":
             print(
-                f"\n  Dominant bottleneck: {s.dominant_bottleneck} ({s.dominant_bottleneck_pct:.0f}% of session)"
+                f"\n  Dominant bottleneck: {s.dominant_bottleneck} "
+                f"({s.dominant_bottleneck_pct:.0f}% of session)"
             )
 
         if s.patterns:
-            print(f"\n  Patterns detected:")
+            print("\n  Patterns detected:")
             for p in s.patterns:
                 print(f"    {p}")
 
         if s.recommendations:
-            print(f"\n  Recommendations:")
+            print("\n  Recommendations:")
             for r in s.recommendations:
                 print(f"    {r}")
 

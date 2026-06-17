@@ -232,7 +232,9 @@ class LiveMetrics(Static):
                         else (
                             "yellow"
                             if m.temperature > 75
-                            else "green" if m.temperature < 60 else ""
+                            else "green"
+                            if m.temperature < 60
+                            else ""
                         )
                     )
                     temp_str = (
@@ -352,7 +354,7 @@ class PeakMetrics(Static):
             current_time = time()
             panels = []
 
-            for device_index, collector in self.metrics_widget.collectors:
+            for device_index, _collector in self.metrics_widget.collectors:
                 peaks = self.metrics_widget._get_peaks(device_index, current_time)
 
                 if not peaks:
@@ -437,7 +439,9 @@ class ReportTab(Static):
             table.add_row("Memory controller", f"{metrics.memory_utilization}%")
             table.add_row(
                 "VRAM",
-                f"{metrics.memory_used // (1024**2)}MB / {metrics.memory_total // (1024**2)}MB ({metrics.memory_used_pct:.0f}%)",
+                f"{metrics.memory_used // (1024**2)}MB / "
+                f"{metrics.memory_total // (1024**2)}MB "
+                f"({metrics.memory_used_pct:.0f}%)",
             )
             table.add_row("Clocks", f"{metrics.gpu_clock} / {metrics.max_gpu_clock} MHz")
 
@@ -447,7 +451,9 @@ class ReportTab(Static):
                 else (
                     "yellow"
                     if metrics.temperature > 75
-                    else "green" if metrics.temperature < 60 else ""
+                    else "green"
+                    if metrics.temperature < 60
+                    else ""
                 )
             )
             temp_str = (
@@ -501,7 +507,7 @@ class ReportTab(Static):
 
             header = Text()
             header.append(f"GPU {i}: {info.name}", style="bold")
-            header.append(f"    Health: ", style="")
+            header.append("    Health: ", style="")
             header.append(f"{grade} ({score}/100)", style=f"bold {grade_color}")
             panels.append(Panel(content, title=header, border_style="white"))
 
@@ -623,10 +629,10 @@ class HistoryTab(Static):
             table.add_row("Samples", f"{total} ({first_time} to {last_time})")
             table.add_row(
                 "Temperature",
-                f"{min(temps):.0f}C - {max(temps):.0f}C (avg {sum(temps)/len(temps):.0f}C)",
+                f"{min(temps):.0f}C - {max(temps):.0f}C (avg {sum(temps) / len(temps):.0f}C)",
             )
             table.add_row(
-                "Utilization", f"{min(utils)}% - {max(utils)}% (avg {sum(utils)/len(utils):.0f}%)"
+                "Utilization", f"{min(utils)}% - {max(utils)}% (avg {sum(utils) / len(utils):.0f}%)"
             )
 
             ecc_total = sum(e.ecc_correctable + e.ecc_uncorrectable for e in gpu_entries)
@@ -637,7 +643,7 @@ class HistoryTab(Static):
             if throttled > 0:
                 table.add_row(
                     "Throttled",
-                    f"[yellow]{throttled}/{total} ({throttled/total*100:.0f}%)[/yellow]",
+                    f"[yellow]{throttled}/{total} ({throttled / total * 100:.0f}%)[/yellow]",
                 )
 
             content = Table.grid(padding=(0, 0))
@@ -652,7 +658,9 @@ class HistoryTab(Static):
                         "red"
                         if t.direction == "rising"
                         and t.metric in ("temperature", "ecc_errors", "throttling")
-                        else "yellow" if t.direction == "rising" else "green"
+                        else "yellow"
+                        if t.direction == "rising"
+                        else "green"
                     )
                     content.add_row(Text(f"    [{t.direction}] {t.detail}", style=color))
 

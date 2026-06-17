@@ -21,7 +21,7 @@ class Snapshot:
 
 
 class SnapshotCache:
-    """Latest snapshot per GPU. A background thread refreshes it so a Prometheus scrape never blocks on NVML."""
+    """Latest snapshot per GPU, refreshed by a worker thread so a scrape never blocks on NVML."""
 
     def __init__(self, gpu_indices: list[int], interval_s: float = 2.0):
         self._gpu_indices = list(gpu_indices)

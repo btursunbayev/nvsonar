@@ -24,10 +24,8 @@ class _NVMLContext:
         try:
             nvml.nvmlInit()
             self._initialized = True
-            # print("nvml initialized")
             return True
         except nvml.NVMLError:
-            # print("nvml init failed")
             return False
 
     @property
@@ -116,10 +114,9 @@ def get_handle(device_index: int):
             raise RuntimeError("Failed to initialize NVML")
     try:
         handle = nvml.nvmlDeviceGetHandleByIndex(device_index)
-        # print(f"got handle for gpu {device_index}")
         return handle
     except nvml.NVMLError as e:
-        raise RuntimeError(f"Failed to get GPU {device_index}: {e}")
+        raise RuntimeError(f"Failed to get GPU {device_index}: {e}") from e
 
 
 def get_device_count() -> int:
@@ -128,7 +125,6 @@ def get_device_count() -> int:
         return 0
     try:
         count = nvml.nvmlDeviceGetCount()
-        # print(f"found {count} gpu(s)")
         return count
     except nvml.NVMLError:
         return 0
@@ -172,7 +168,6 @@ def get_gpu_info(device_index: int = 0) -> GPUInfo | None:
             cuda_version=cuda_str,
             pci_bus_id=bus_id,
         )
-        # print(f"  gpu {device_index}: {name}, vram {memory.total // (1024**3)}GB")
         return info
     except nvml.NVMLError:
         return None
@@ -231,7 +226,6 @@ def get_pcie_info(handle) -> PCIeInfo:
         tx_throughput_kbps=tx,
         rx_throughput_kbps=rx,
     )
-    # print(f"  pcie gen{current_gen} x{current_width} (max gen{max_gen} x{max_width})")
     return pcie
 
 
@@ -241,7 +235,6 @@ def get_ecc_info(handle) -> ECCInfo:
         mode = nvml.nvmlDeviceGetEccMode(handle)
         ecc_enabled = mode[0] == nvml.NVML_FEATURE_ENABLED
     except nvml.NVMLError:
-        # print("  ecc not supported on this gpu")
         return ECCInfo(correctable=0, uncorrectable=0, ecc_enabled=False)
 
     correctable = 0
@@ -261,7 +254,6 @@ def get_ecc_info(handle) -> ECCInfo:
     except nvml.NVMLError:
         pass
 
-    # print(f"  ecc enabled={ecc_enabled} correctable={correctable} uncorrectable={uncorrectable}")
     return ECCInfo(
         correctable=correctable,
         uncorrectable=uncorrectable,
