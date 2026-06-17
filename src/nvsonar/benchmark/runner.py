@@ -1,7 +1,6 @@
 """Compile and run CUDA benchmark kernels"""
 
 import ctypes
-import os
 import shutil
 import subprocess
 from dataclasses import dataclass
@@ -88,7 +87,7 @@ def _compile(kernel_name: str) -> Path:
     try:
         subprocess.run(cmd, check=True, capture_output=True, text=True)
     except subprocess.CalledProcessError as e:
-        raise RuntimeError(f"Failed to compile {kernel_name}.cu: {e.stderr}")
+        raise RuntimeError(f"Failed to compile {kernel_name}.cu: {e.stderr}") from e
 
     return so_path
 

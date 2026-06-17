@@ -13,15 +13,15 @@ test-cov:
 	pytest tests/ -v --tb=short --cov=nvsonar --cov-report=term-missing
 
 lint:
-	black --check src/ tests/
-	isort --check-only src/ tests/
+	ruff check src/ tests/
+	ruff format --check src/ tests/
 
 typecheck:
 	mypy src/
 
 format:
-	black src/ tests/
-	isort src/ tests/
+	ruff check --fix src/ tests/
+	ruff format src/ tests/
 
 build:
 	python -m build

@@ -58,8 +58,8 @@ def _parse_gpu_selection(value: str, device_count: int) -> list[int]:
             continue
         try:
             idx = int(part)
-        except ValueError:
-            raise typer.BadParameter(f"invalid GPU index: {part!r}")
+        except ValueError as e:
+            raise typer.BadParameter(f"invalid GPU index: {part!r}") from e
         if idx < 0 or idx >= device_count:
             raise typer.BadParameter(f"GPU {idx} not found, {device_count} available")
         if idx not in indices:

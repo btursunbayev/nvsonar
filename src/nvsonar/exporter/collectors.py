@@ -1,6 +1,6 @@
 """Prometheus collectors that translate NVSonar snapshots into metric families."""
 
-from typing import Iterator
+from collections.abc import Iterator
 
 from prometheus_client.core import CounterMetricFamily, GaugeMetricFamily
 from prometheus_client.registry import Collector

@@ -52,7 +52,7 @@ def classify(metrics: Metrics) -> BottleneckResult:
     gu = gpu_util if gpu_util is not None else 0
     mu = mem_util if mem_util is not None else 0
 
-    # --- idle ---
+    # idle
     if gu < 5 and mu < 5:
         return BottleneckResult(
             BottleneckType.IDLE,
@@ -61,8 +61,7 @@ def classify(metrics: Metrics) -> BottleneckResult:
             warnings,
         )
 
-    # --- hardware throttle (highest priority, masks real workload profile) ---
-
+    # hardware throttle takes priority — it masks the real workload profile
     hw_thermal = throttle.worst_severity == "critical" and any(
         r.name in ("Hardware Thermal Slowdown", "Hardware Slowdown")
         for r in throttle.active_reasons
@@ -105,8 +104,7 @@ def classify(metrics: Metrics) -> BottleneckResult:
             warnings,
         )
 
-    # --- workload classification ---
-
+    # workload classification
     if mem_used_pct is not None and mem_used_pct > 95:
         return BottleneckResult(
             BottleneckType.MEMORY_CAPACITY_BOUND,
@@ -189,8 +187,7 @@ def _collect_warnings(metrics: Metrics) -> list[str]:
     # ECC errors
     if metrics.ecc.uncorrectable > 0:
         warnings.append(
-            f"{metrics.ecc.uncorrectable} uncorrectable ECC errors, "
-            f"hardware may need replacement"
+            f"{metrics.ecc.uncorrectable} uncorrectable ECC errors, hardware may need replacement"
         )
     elif metrics.ecc.correctable > 0:
         warnings.append(f"{metrics.ecc.correctable} correctable ECC errors, monitor for increase")
@@ -206,8 +203,7 @@ def _collect_warnings(metrics: Metrics) -> list[str]:
         and not is_gpu_idle
     ):
         warnings.append(
-            f"Clocks {metrics.clock_reduction_pct:.0f}% below max "
-            f"without active throttle reason"
+            f"Clocks {metrics.clock_reduction_pct:.0f}% below max without active throttle reason"
         )
 
     # fan speed

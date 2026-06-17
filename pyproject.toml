@@ -41,8 +41,7 @@ dependencies = [
 dev = [
     "pytest>=7.0",
     "pytest-cov>=4.0",
-    "black>=24.0",
-    "isort>=5.12",
+    "ruff>=0.6.0",
     "mypy>=1.0",
     "build>=1.0",
     "pre-commit>=3.0",
@@ -61,14 +60,22 @@ where = ["src"]
 [tool.setuptools.package-data]
 "nvsonar.benchmark" = ["kernels/*.cu"]
 
-[tool.black]
+[tool.ruff]
 line-length = 100
-target-version = ["py310"]
-include = '\.pyi?$'
+target-version = "py310"
 
-[tool.isort]
-profile = "black"
-line_length = 100
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "F",   # pyflakes
+    "W",   # pycodestyle warnings
+    "I",   # isort
+    "UP",  # pyupgrade
+    "B",   # flake8-bugbear
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["nvsonar"]
 
 [tool.mypy]
 python_version = "3.10"

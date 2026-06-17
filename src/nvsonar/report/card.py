@@ -5,7 +5,7 @@ from rich.panel import Panel
 from rich.table import Table
 from rich.text import Text
 
-from nvsonar.analysis.bottleneck import BottleneckResult, BottleneckType
+from nvsonar.analysis.bottleneck import BottleneckResult
 from nvsonar.analysis.health import health_score as _health_score
 from nvsonar.analysis.recommendations import Recommendation
 from nvsonar.analysis.temporal import Pattern
@@ -76,9 +76,7 @@ def print_report(
         mem_color = (
             "red" if mem_pct and mem_pct > 90 else "yellow" if mem_pct and mem_pct > 75 else ""
         )
-        vram_str = (
-            f"{metrics.memory_used // (1024**2)}MB / " f"{metrics.memory_total // (1024**2)}MB"
-        )
+        vram_str = f"{metrics.memory_used // (1024**2)}MB / {metrics.memory_total // (1024**2)}MB"
         if mem_pct is not None:
             vram_str += f" ({mem_pct:.0f}%)"
         if mem_color:
