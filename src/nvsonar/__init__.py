@@ -1,5 +1,12 @@
 """NVSonar - Active GPU diagnostic tool"""
 
-__version__ = "2.2.0"
+from importlib.metadata import PackageNotFoundError, version
 
 from nvsonar.session import monitor, print_summary, start, stop
+
+try:
+    __version__ = version("nvsonar")
+except PackageNotFoundError:
+    __version__ = "0.0.0+unknown"
+
+__all__ = ["__version__", "monitor", "print_summary", "start", "stop"]
