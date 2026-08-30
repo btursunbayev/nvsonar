@@ -1,6 +1,6 @@
 """Shared fixtures and helpers for analysis layer tests."""
 
-from nvsonar.monitor.hardware import ECCInfo, PCIeInfo
+from nvsonar.monitor.hardware import ECCInfo, GPUInfo, GPUProcess, PCIeInfo
 from nvsonar.monitor.metrics import Metrics
 from nvsonar.monitor.throttle import ThrottleReason, ThrottleStatus
 
@@ -71,6 +71,8 @@ def make_metrics(
     throttle: ThrottleStatus | None = None,
     pcie: PCIeInfo | None = None,
     ecc: ECCInfo | None = None,
+    processes: list[GPUProcess] | None = None,
+    errors: list[str] | None = None,
 ) -> Metrics:
     return Metrics(
         gpu_utilization=gpu_util,
@@ -87,4 +89,27 @@ def make_metrics(
         throttle=throttle if throttle is not None else make_throttle(),
         pcie=pcie if pcie is not None else make_pcie(),
         ecc=ecc if ecc is not None else make_ecc(),
+        processes=processes or [],
+        errors=errors or [],
     )
+
+
+def make_gpu_info(
+    *,
+    index: int = 0,
+    name: str = "NVIDIA A30",
+    memory_total: int = 24 * 1024**3,
+) -> GPUInfo:
+    return GPUInfo(
+        index=index,
+        name=name,
+        uuid=f"GPU-0000000{index}-0000-0000-0000-000000000000",
+        memory_total=memory_total,
+        driver_version="550.54.14",
+        cuda_version="12.4",
+        pci_bus_id=f"00000000:0{index}:00.0",
+    )
+
+
+def make_process(pid: int = 1234, name: str = "python", used_memory_mb: int = 512) -> GPUProcess:
+    return GPUProcess(pid=pid, name=name, used_memory=used_memory_mb * 1024**2)
