@@ -1,5 +1,19 @@
 # Changelog
 
+## [2.5.0] - 2026-08-29
+
+### Added
+- Unit tests for report, history and session layers
+- Issue and PR templates, Dependabot, CodeQL
+
+### Fixed
+- Session summary crash when a metric is unavailable
+- Zero power draw treated as unavailable
+- Version read from package metadata
+
+### Changed
+- Formatting and linting migrated from black + isort to ruff
+
 ## [2.4.0] - 2026-06-05
 
 ### Added
