@@ -1,5 +1,15 @@
 # Changelog
 
+## [2.5.1] - 2026-11-09
+
+### Fixed
+- Memory-bandwidth-bound workloads misclassified as balanced
+- GPU with nearly full VRAM misclassified as idle
+- Data-starved detection no longer requires >50% VRAM in use
+
+### Added
+- Regression tests for the three misclassification cases
+
 ## [2.5.0] - 2026-08-29
 
 ### Added

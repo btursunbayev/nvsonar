@@ -52,6 +52,15 @@ def classify(metrics: Metrics) -> BottleneckResult:
     gu = gpu_util if gpu_util is not None else 0
     mu = mem_util if mem_util is not None else 0
 
+    # VRAM nearly full is the bottleneck whatever the compute load, so check it before idle
+    if mem_used_pct is not None and mem_used_pct > 95:
+        return BottleneckResult(
+            BottleneckType.MEMORY_CAPACITY_BOUND,
+            0.90,
+            f"VRAM {mem_used_pct:.0f}% full, OOM risk",
+            warnings,
+        )
+
     # idle
     if gu < 5 and mu < 5:
         return BottleneckResult(
@@ -105,11 +114,14 @@ def classify(metrics: Metrics) -> BottleneckResult:
         )
 
     # workload classification
-    if mem_used_pct is not None and mem_used_pct > 95:
+    # "GPU utilization" is the fraction of time any kernel runs, so a memory-bound kernel also
+    # reads ~100%; a saturated memory controller identifies it regardless of GPU utilization.
+    if mu >= 80:
+        conf = 0.85 if mu > 90 else 0.75
         return BottleneckResult(
-            BottleneckType.MEMORY_CAPACITY_BOUND,
-            0.90,
-            f"VRAM {mem_used_pct:.0f}% full, OOM risk",
+            BottleneckType.MEMORY_BANDWIDTH_BOUND,
+            conf,
+            f"Memory controller {mu}% busy, GPU kernels active {gu}% of the time",
             warnings,
         )
 
@@ -122,20 +134,13 @@ def classify(metrics: Metrics) -> BottleneckResult:
             warnings,
         )
 
-    if mu > 80 and gu < 85:
-        conf = 0.85 if mu > 90 else 0.75
-        return BottleneckResult(
-            BottleneckType.MEMORY_BANDWIDTH_BOUND,
-            conf,
-            f"Memory controller {mu}% busy, GPU at {gu}%",
-            warnings,
-        )
-
-    if gu < 40 and mem_used_pct is not None and mem_used_pct > 50:
+    # Kernels run only part of the time and the memory controller is quiet: the GPU is
+    # waiting on the host (input pipeline, CPU preprocessing, synchronization).
+    if gu < 75 and mu < 50:
         return BottleneckResult(
             BottleneckType.DATA_STARVED,
             0.70,
-            f"GPU only {gu}% utilized despite {mem_used_pct:.0f}% VRAM used, "
+            f"GPU kernels active only {gu}% of the time with memory controller at {mu}%, "
             f"likely CPU or data loading bottleneck",
             warnings,
         )
