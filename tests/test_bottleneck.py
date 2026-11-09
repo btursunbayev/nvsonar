@@ -156,3 +156,37 @@ def test_misleading_utilization_warning():
     )
     result = classify(metrics)
     assert any("not truly compute-saturated" in w for w in result.warnings)
+
+
+# Regression cases measured on a GTX 1660 Ti with induced workloads (scripts/classify_eval.py)
+
+
+def test_memory_bound_kernel_reads_full_gpu_utilization():
+    # a streaming copy keeps a kernel running all the time: NVML reports 100% / 100%
+    result = classify(make_metrics(gpu_util=100, mem_util=100))
+    assert result.bottleneck == BottleneckType.MEMORY_BANDWIDTH_BOUND
+
+
+def test_full_vram_with_light_compute_is_capacity_not_idle():
+    result = classify(
+        make_metrics(
+            gpu_util=1,
+            mem_util=1,
+            memory_used=int(0.97 * 6 * 1024**3),
+            memory_total=6 * 1024**3,
+        )
+    )
+    assert result.bottleneck == BottleneckType.MEMORY_CAPACITY_BOUND
+
+
+def test_gpu_waiting_on_host_is_data_starved_regardless_of_vram():
+    for vram_fraction in (0.15, 0.65):
+        result = classify(
+            make_metrics(
+                gpu_util=52,
+                mem_util=11,
+                memory_used=int(vram_fraction * 6 * 1024**3),
+                memory_total=6 * 1024**3,
+            )
+        )
+        assert result.bottleneck == BottleneckType.DATA_STARVED

@@ -58,7 +58,9 @@ def build_report(
             "temperature_c": metrics.temperature,
             "power_usage_w": metrics.power_usage,
             "power_limit_w": metrics.power_limit,
-            "power_used_pct": round(metrics.power_used_pct, 1) if metrics.power_used_pct else None,
+            "power_used_pct": (
+                round(metrics.power_used_pct, 1) if metrics.power_used_pct is not None else None
+            ),
             "fan_speed_pct": metrics.fan_speed,
         },
         "throttle": {

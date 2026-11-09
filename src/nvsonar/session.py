@@ -33,16 +33,16 @@ class GPUSummary:
     throttled_pct: float
     data_starved_pct: float
 
-    # peaks
-    peak_temperature: float
-    peak_gpu_utilization: int
-    peak_memory_used_pct: float
+    # peaks (None when the GPU never reported the metric)
+    peak_temperature: float | None
+    peak_gpu_utilization: int | None
+    peak_memory_used_pct: float | None
     peak_power_usage: float | None
 
-    # averages
-    avg_gpu_utilization: float
-    avg_memory_utilization: float
-    avg_temperature: float
+    # averages (None when the GPU never reported the metric)
+    avg_gpu_utilization: float | None
+    avg_memory_utilization: float | None
+    avg_temperature: float | None
 
     # dominant bottleneck
     dominant_bottleneck: str
@@ -190,10 +190,18 @@ class Session:
                 dominant_pct = 100.0
 
             # peaks and averages
-            temps = [s.metrics.temperature for s in snaps]
-            gpu_utils = [s.metrics.gpu_utilization for s in snaps]
-            mem_utils = [s.metrics.memory_utilization for s in snaps]
-            mem_used_pcts = [s.metrics.memory_used_pct for s in snaps]
+            temps = [s.metrics.temperature for s in snaps if s.metrics.temperature is not None]
+            gpu_utils = [
+                s.metrics.gpu_utilization for s in snaps if s.metrics.gpu_utilization is not None
+            ]
+            mem_utils = [
+                s.metrics.memory_utilization
+                for s in snaps
+                if s.metrics.memory_utilization is not None
+            ]
+            mem_used_pcts = [
+                s.metrics.memory_used_pct for s in snaps if s.metrics.memory_used_pct is not None
+            ]
             powers = [s.metrics.power_usage for s in snaps if s.metrics.power_usage is not None]
 
             # temporal patterns
@@ -214,13 +222,13 @@ class Session:
                     idle_pct=(idle_count / total) * 100,
                     throttled_pct=(throttled_count / total) * 100,
                     data_starved_pct=(starved_count / total) * 100,
-                    peak_temperature=max(temps),
-                    peak_gpu_utilization=max(gpu_utils),
-                    peak_memory_used_pct=max(mem_used_pcts),
+                    peak_temperature=max(temps) if temps else None,
+                    peak_gpu_utilization=max(gpu_utils) if gpu_utils else None,
+                    peak_memory_used_pct=max(mem_used_pcts) if mem_used_pcts else None,
                     peak_power_usage=max(powers) if powers else None,
-                    avg_gpu_utilization=sum(gpu_utils) / total,
-                    avg_memory_utilization=sum(mem_utils) / total,
-                    avg_temperature=sum(temps) / total,
+                    avg_gpu_utilization=(sum(gpu_utils) / len(gpu_utils)) if gpu_utils else None,
+                    avg_memory_utilization=(sum(mem_utils) / len(mem_utils)) if mem_utils else None,
+                    avg_temperature=(sum(temps) / len(temps)) if temps else None,
                     dominant_bottleneck=dominant,
                     dominant_bottleneck_pct=dominant_pct,
                     patterns=pattern_strs,
@@ -279,13 +287,17 @@ def print_summary(result: SessionResult):
         print(f"Session: {minutes:.1f} min, {s.total_samples} samples")
         print(f"{'=' * 60}")
 
-        print(f"\n  Avg GPU utilization:    {s.avg_gpu_utilization:.0f}%")
-        print(f"  Avg memory controller:  {s.avg_memory_utilization:.0f}%")
-        print(f"  Avg temperature:        {s.avg_temperature:.0f}C")
-        print(f"  Peak temperature:       {s.peak_temperature:.0f}C")
-        print(f"  Peak VRAM:              {s.peak_memory_used_pct:.0f}%")
+        def stat(label: str, value: float | None, unit: str):
+            print(f"  {label:<23} {'N/A' if value is None else f'{value:.0f}{unit}'}")
+
+        print()
+        stat("Avg GPU utilization:", s.avg_gpu_utilization, "%")
+        stat("Avg memory controller:", s.avg_memory_utilization, "%")
+        stat("Avg temperature:", s.avg_temperature, "C")
+        stat("Peak temperature:", s.peak_temperature, "C")
+        stat("Peak VRAM:", s.peak_memory_used_pct, "%")
         if s.peak_power_usage is not None:
-            print(f"  Peak power:             {s.peak_power_usage:.0f}W")
+            stat("Peak power:", s.peak_power_usage, "W")
 
         print("\n  Time distribution:")
         print(f"    Idle:          {s.idle_pct:.1f}%")

@@ -68,7 +68,7 @@ class Metrics:
 
     @property
     def power_used_pct(self) -> float | None:
-        if not self.power_usage or not self.power_limit:
+        if self.power_usage is None or self.power_limit is None:
             return None
         if self.power_limit == 0:
             return None
