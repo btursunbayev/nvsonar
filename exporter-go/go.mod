@@ -3,7 +3,7 @@ module github.com/btursunbayev/nvsonar/exporter-go
 go 1.24
 
 require (
-	github.com/NVIDIA/go-nvml v0.12.9-0
+	github.com/NVIDIA/go-nvml v0.13.4-1
 	github.com/prometheus/client_golang v1.22.0
 )
 
