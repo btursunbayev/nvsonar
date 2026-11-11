@@ -1,5 +1,14 @@
 # Changelog
 
+## [2.6.0] - 2026-11-10
+
+### Added
+- Go exporter as a single binary with the same metrics
+- Prebuilt linux amd64 and arm64 exporter binaries on each GitHub release
+- Shared classifier cases checked by Python and Go tests
+- Go build, tests and CodeQL in CI
+- Exporter benchmark script
+
 ## [2.5.1] - 2026-11-09
 
 ### Fixed
