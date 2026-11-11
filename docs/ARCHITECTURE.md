@@ -62,6 +62,10 @@ CUDA kernels in `benchmark/kernels/` measure actual GPU performance and compare 
 
 `history.py` saves GPU state after each `nvsonar report` to `~/.nvsonar/history/` as JSONL (one file per GPU per day). Trend analysis compares the first and second half of stored data to detect changes in temperature, ECC errors, throttle frequency, and clock speeds under load.
 
+## Exporter
+
+`exporter/` serves Prometheus metrics from a background collection loop, so a scrape reads cached values and never blocks on NVML. `exporter-go/` is a standalone Go build of the same exporter. Its bottleneck rules and health score are a port of `analysis/`, and both languages are tested against the shared cases in `tests/fixtures/classifier_cases.json`.
+
 ## CLI
 
 `cli.py` routes commands through typer. Running `nvsonar` with no arguments launches the Textual TUI with tabs for Overview, Report, Benchmark, History, and Peaks. Subcommands (`report`, `benchmark`, `history`) provide non-interactive access to the same functionality with flags for output format and GPU selection.

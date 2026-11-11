@@ -1,4 +1,4 @@
-.PHONY: install hooks test lint typecheck format build clean
+.PHONY: install hooks test lint typecheck format build clean go-build go-test go-lint
 
 install:
 	pip install -e ".[dev]"
@@ -26,7 +26,16 @@ format:
 build:
 	python -m build
 
+go-build:
+	cd exporter-go && go build -o bin/nvsonar-exporter ./cmd/nvsonar-exporter
+
+go-test:
+	cd exporter-go && go test ./...
+
+go-lint:
+	cd exporter-go && test -z "$$(gofmt -l .)" && go vet ./...
+
 clean:
-	rm -rf build/ dist/ *.egg-info src/*.egg-info
+	rm -rf build/ dist/ *.egg-info src/*.egg-info exporter-go/bin/
 	find . -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true
 	find . -type f -name "*.pyc" -delete 2>/dev/null || true

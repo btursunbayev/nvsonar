@@ -19,10 +19,16 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        language: [python]
+        language: [python, go]
 
     steps:
       - uses: actions/checkout@v7
+
+      - name: Set up Go
+        if: matrix.language == 'go'
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: exporter-go/go.mod
 
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v4

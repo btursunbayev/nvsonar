@@ -15,3 +15,11 @@ updates:
     open-pull-requests-limit: 3
     labels:
       - dependencies
+
+  - package-ecosystem: gomod
+    directory: /exporter-go
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 3
+    labels:
+      - dependencies

@@ -32,3 +32,24 @@ jobs:
 
     - name: Test
       run: make test
+
+  go:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v7
+
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version-file: exporter-go/go.mod
+        cache-dependency-path: exporter-go/go.sum
+
+    - name: Lint
+      run: make go-lint
+
+    - name: Test
+      run: make go-test
+
+    - name: Build
+      run: make go-build
