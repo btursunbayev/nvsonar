@@ -67,6 +67,8 @@ nvsonar_gpu_throttle_active{severity="critical"} # active critical throttle reas
 
 A ready-made Grafana dashboard is shipped at [dashboards/nvsonar.json](dashboards/nvsonar.json) — import it in Grafana (`+` → Import → Upload JSON file) and pick your Prometheus datasource. Ten panels: health score, bottleneck distribution, temperature with thermal thresholds, power draw vs limit, compute utilization, VRAM usage, active throttle reasons, ECC error rate, and exporter self-monitoring.
 
+A standalone Go build of the exporter ships as a single binary with the same metrics, for hosts without Python. See [exporter-go/README.md](exporter-go/README.md).
+
 ## Documentation
 
 - [Architecture](docs/ARCHITECTURE.md)
