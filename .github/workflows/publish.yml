@@ -29,3 +29,35 @@ jobs:
 
     - name: Publish to PyPI
       uses: pypa/gh-action-pypi-publish@release/v1
+
+  go-binaries:
+    runs-on: ${{ matrix.runner }}
+    permissions:
+      contents: write
+
+    strategy:
+      matrix:
+        include:
+          - runner: ubuntu-latest
+            arch: amd64
+          - runner: ubuntu-24.04-arm
+            arch: arm64
+
+    steps:
+    - uses: actions/checkout@v7
+
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version-file: exporter-go/go.mod
+        cache-dependency-path: exporter-go/go.sum
+
+    - name: Build
+      working-directory: exporter-go
+      run: go build -trimpath -ldflags "-s -w -X main.version=${{ github.event.release.tag_name }}" -o nvsonar-exporter-linux-${{ matrix.arch }} ./cmd/nvsonar-exporter
+
+    - name: Upload to release
+      working-directory: exporter-go
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: gh release upload ${{ github.event.release.tag_name }} nvsonar-exporter-linux-${{ matrix.arch }}
