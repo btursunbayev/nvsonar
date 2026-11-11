@@ -11,6 +11,9 @@ dist/
 build/
 .eggs/
 
+# Go
+exporter-go/bin/
+
 # Virtual environments
 venv/
 env/
